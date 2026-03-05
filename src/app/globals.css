@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #0a0a0f;
+  --bg-surface: #151520;
+  --bg-elevated: #1e1e2e;
+  --bg-hover: #252538;
+
+  /* Borders */
+  --border-default: #2a2a3a;
+  --border-subtle: #1e1e2e;
+  --border-focus: #ec4899;
+
+  /* Text */
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  /* Accent — Deck A (Pink) */
+  --accent-a: #ec4899;
+  --accent-a-dim: #9d174d;
+  --waveform-a: #f472b6;
+
+  /* Accent — Deck B (Blue) */
+  --accent-b: #3b82f6;
+  --accent-b-dim: #1e40af;
+  --waveform-b: #60a5fa;
+
+  /* VU Meter */
+  --vu-green: #22c55e;
+  --vu-yellow: #eab308;
+  --vu-red: #ef4444;
+
+  /* Controls */
+  --knob-bg: #1e1e2e;
+  --knob-ring: #3a3a4a;
+  --fader-track: #2a2a3a;
+  --fader-thumb: #e2e8f0;
+
+  /* Misc */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, sans-serif;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Custom range slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-track {
+  background: var(--fader-track);
+  border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--fader-thumb);
+  border-radius: 3px;
+  border: none;
+}
+
+input[type="range"]::-moz-range-track {
+  background: var(--fader-track);
+  border-radius: 4px;
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  background: var(--fader-thumb);
+  border-radius: 3px;
+  border: none;
+}
+
+/* Vertical slider support */
+input[type="range"].vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
