@@ -2,14 +2,25 @@
 
 import type { Track, DeckId } from '@/lib/types';
 import { usePlaylistStore } from '@/stores/usePlaylistStore';
+import { useMixerStore } from '@/stores/useMixerStore';
 
 interface SearchResultProps {
   track: Track;
   onLoadToDeck: (videoId: string, title: string, channel: string, thumbnail: string, deckId: DeckId) => void;
 }
 
+const DECK_BUTTONS: { id: DeckId; bg: string }[] = [
+  { id: 'A', bg: 'var(--accent-a-dim)' },
+  { id: 'B', bg: 'var(--accent-b-dim)' },
+  { id: 'C', bg: 'var(--accent-c-dim)' },
+  { id: 'D', bg: 'var(--accent-d-dim)' },
+];
+
 export default function SearchResult({ track, onLoadToDeck }: SearchResultProps) {
   const addTrack = usePlaylistStore((s) => s.addTrack);
+  const deckMode = useMixerStore((s) => s.deckMode);
+
+  const visibleDecks = deckMode === 4 ? DECK_BUTTONS : DECK_BUTTONS.slice(0, 2);
 
   return (
     <div
@@ -37,20 +48,16 @@ export default function SearchResult({ track, onLoadToDeck }: SearchResultProps)
         >
           +
         </button>
-        <button
-          onClick={() => onLoadToDeck(track.videoId, track.title, track.channel, track.thumbnail, 'A')}
-          className="px-2 py-1 rounded text-xs font-bold transition-colors"
-          style={{ background: 'var(--accent-a-dim)', color: '#fff' }}
-        >
-          → A
-        </button>
-        <button
-          onClick={() => onLoadToDeck(track.videoId, track.title, track.channel, track.thumbnail, 'B')}
-          className="px-2 py-1 rounded text-xs font-bold transition-colors"
-          style={{ background: 'var(--accent-b-dim)', color: '#fff' }}
-        >
-          → B
-        </button>
+        {visibleDecks.map(({ id, bg }) => (
+          <button
+            key={id}
+            onClick={() => onLoadToDeck(track.videoId, track.title, track.channel, track.thumbnail, id)}
+            className="px-2 py-1 rounded text-xs font-bold transition-colors"
+            style={{ background: bg, color: '#fff' }}
+          >
+            → {id}
+          </button>
+        ))}
       </div>
     </div>
   );

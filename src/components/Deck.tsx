@@ -11,29 +11,36 @@ import TrackInfo from './TrackInfo';
 import LoopControls from './LoopControls';
 import HotCues from './HotCues';
 import type { DeckId } from '@/lib/types';
-import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
+import { getDeckStoreById } from '@/stores/useDeckStore';
 
 interface DeckProps {
   id: DeckId;
+  compact?: boolean;
 }
 
 const ACCENTS: Record<DeckId, string> = {
   A: 'var(--accent-a)',
   B: 'var(--accent-b)',
+  C: 'var(--accent-c)',
+  D: 'var(--accent-d)',
 };
 
 const ACCENT_HEX: Record<DeckId, string> = {
   A: '#ec4899',
   B: '#3b82f6',
+  C: '#22c55e',
+  D: '#f97316',
 };
 
 const DIM_HEX: Record<DeckId, string> = {
   A: '#9d174d',
   B: '#1e40af',
+  C: '#15803d',
+  D: '#c2410c',
 };
 
-export default function Deck({ id }: DeckProps) {
-  const store = id === 'A' ? useDeckAStore : useDeckBStore;
+export default function Deck({ id, compact }: DeckProps) {
+  const store = getDeckStoreById(id);
   const {
     videoId, title, channel, duration, currentTime, isPlaying, volume,
     eqLow, eqMid, eqHigh, bpm, loop, hotCues,
@@ -62,7 +69,7 @@ export default function Deck({ id }: DeckProps) {
         const d = playerRef.getDuration?.() ?? 0;
         if (d > 0) setDuration(d);
 
-        const currentLoop = (id === 'A' ? useDeckAStore : useDeckBStore).getState().loop;
+        const currentLoop = getDeckStoreById(id).getState().loop;
         if (currentLoop.active && currentLoop.end > 0 && t >= currentLoop.end) {
           playerRef.seekTo(currentLoop.start, true);
         }

@@ -27,6 +27,16 @@
   --accent-b-dim: #1e40af;
   --waveform-b: #60a5fa;
 
+  /* Accent — Deck C (Green) */
+  --accent-c: #22c55e;
+  --accent-c-dim: #15803d;
+  --waveform-c: #4ade80;
+
+  /* Accent — Deck D (Orange) */
+  --accent-d: #f97316;
+  --accent-d-dim: #c2410c;
+  --waveform-d: #fb923c;
+
   /* VU Meter */
   --vu-green: #22c55e;
   --vu-yellow: #eab308;

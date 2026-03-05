@@ -1,4 +1,4 @@
-export type DeckId = 'A' | 'B';
+export type DeckId = 'A' | 'B' | 'C' | 'D';
 
 export interface Track {
   videoId: string;

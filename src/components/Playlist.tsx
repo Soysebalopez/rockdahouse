@@ -1,16 +1,27 @@
 'use client';
 
-import { useCallback, useRef } from 'react';
+import { useRef } from 'react';
 import { usePlaylistStore } from '@/stores/usePlaylistStore';
-import type { DeckId, Track } from '@/lib/types';
+import { useMixerStore } from '@/stores/useMixerStore';
+import type { DeckId } from '@/lib/types';
 
 interface PlaylistProps {
   onLoadToDeck: (videoId: string, title: string, channel: string, thumbnail: string, deckId: DeckId) => void;
 }
 
+const DECK_BUTTONS: { id: DeckId; bg: string }[] = [
+  { id: 'A', bg: 'var(--accent-a-dim)' },
+  { id: 'B', bg: 'var(--accent-b-dim)' },
+  { id: 'C', bg: 'var(--accent-c-dim)' },
+  { id: 'D', bg: 'var(--accent-d-dim)' },
+];
+
 export default function Playlist({ onLoadToDeck }: PlaylistProps) {
   const { tracks, isOpen, removeTrack, moveTrack, clearPlaylist } = usePlaylistStore();
+  const deckMode = useMixerStore((s) => s.deckMode);
   const dragIndexRef = useRef<number | null>(null);
+
+  const visibleDecks = deckMode === 4 ? DECK_BUTTONS : DECK_BUTTONS.slice(0, 2);
 
   const handleDragStart = (index: number) => {
     dragIndexRef.current = index;
@@ -62,16 +73,14 @@ export default function Playlist({ onLoadToDeck }: PlaylistProps) {
               <div className="text-xs truncate" style={{ color: 'var(--text-primary)' }}>{track.title}</div>
             </div>
             <div className="flex gap-1 shrink-0">
-              <button
-                onClick={() => onLoadToDeck(track.videoId, track.title, track.channel, track.thumbnail, 'A')}
-                className="px-1.5 py-0.5 rounded text-[9px] font-bold"
-                style={{ background: 'var(--accent-a-dim)', color: '#fff' }}
-              >A</button>
-              <button
-                onClick={() => onLoadToDeck(track.videoId, track.title, track.channel, track.thumbnail, 'B')}
-                className="px-1.5 py-0.5 rounded text-[9px] font-bold"
-                style={{ background: 'var(--accent-b-dim)', color: '#fff' }}
-              >B</button>
+              {visibleDecks.map(({ id, bg }) => (
+                <button
+                  key={id}
+                  onClick={() => onLoadToDeck(track.videoId, track.title, track.channel, track.thumbnail, id)}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-bold"
+                  style={{ background: bg, color: '#fff' }}
+                >{id}</button>
+              ))}
               <button
                 onClick={() => removeTrack(track.videoId)}
                 className="px-1.5 py-0.5 rounded text-[9px]"

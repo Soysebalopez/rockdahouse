@@ -105,7 +105,20 @@ function createDeckStore() {
 
 export const useDeckAStore = createDeckStore();
 export const useDeckBStore = createDeckStore();
+export const useDeckCStore = createDeckStore();
+export const useDeckDStore = createDeckStore();
+
+const DECK_STORES = {
+  A: useDeckAStore,
+  B: useDeckBStore,
+  C: useDeckCStore,
+  D: useDeckDStore,
+} as const;
 
 export function useDeckStore(id: DeckId) {
-  return id === 'A' ? useDeckAStore : useDeckBStore;
+  return DECK_STORES[id];
+}
+
+export function getDeckStoreById(id: DeckId) {
+  return DECK_STORES[id];
 }
