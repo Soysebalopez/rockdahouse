@@ -14,6 +14,11 @@ import FXControls from './FXControls';
 import EQPanel from './EQPanel';
 import type { DeckId } from '@/lib/types';
 import { getDeckStoreById } from '@/stores/useDeckStore';
+import { useMixerStore } from '@/stores/useMixerStore';
+import {
+  createDeckGraph, destroyDeckGraph, getDeckGraph,
+  updateEQ3, updateEQBand, updateAllEQBands,
+} from '@/hooks/useAudioEngine';
 
 interface DeckProps {
   id: DeckId;
@@ -41,6 +46,8 @@ const DIM_HEX: Record<DeckId, string> = {
   D: '#c2410c',
 };
 
+const DRIFT_THRESHOLD = 0.3; // seconds
+
 export default function Deck({ id, compact }: DeckProps) {
   const store = getDeckStoreById(id);
   const {
@@ -48,10 +55,60 @@ export default function Deck({ id, compact }: DeckProps) {
     eqLow, eqMid, eqHigh, eqBands, eqPanelOpen, bpm, loop, hotCues,
     playerRef, setPlayerRef, setPlaying, setVolume, setEQ, setEQBand, resetEQBands, toggleEQPanel, setBPM,
     setCurrentTime, setDuration, setLoop, clearLoop, setHotCue,
+    audioEngineActive, audioStreamUrl, audioError,
+    setAudioEngineActive, fetchAudioStream,
   } = store();
 
   const accent = ACCENTS[id];
   const timeUpdateRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const audioInitRef = useRef<string | null>(null); // Track which videoId we initialized for
+
+  // Fetch audio stream URL when a new track is loaded
+  useEffect(() => {
+    if (videoId && videoId !== audioInitRef.current) {
+      audioInitRef.current = videoId;
+      fetchAudioStream(videoId);
+    }
+  }, [videoId, fetchAudioStream]);
+
+  // Create/destroy Web Audio graph when stream URL becomes available
+  useEffect(() => {
+    if (!audioStreamUrl || !videoId) return;
+
+    const crossfaderSide = useMixerStore.getState().crossfaderAssign[id];
+    const graph = createDeckGraph(id, audioStreamUrl, crossfaderSide);
+
+    // Apply current EQ state to the new graph
+    updateEQ3(id, eqLow, eqMid, eqHigh);
+    updateAllEQBands(id, eqBands);
+
+    store.getState().setAudioEngineActive(true);
+
+    // Mute YouTube IFrame (video only)
+    const player = store.getState().playerRef;
+    player?.setVolume(0);
+
+    return () => {
+      destroyDeckGraph(id);
+      store.getState().setAudioEngineActive(false);
+    };
+    // Only re-run when stream URL changes (new track)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioStreamUrl, id]);
+
+  // Sync EQ knobs to real filters
+  useEffect(() => {
+    if (audioEngineActive) {
+      updateEQ3(id, eqLow, eqMid, eqHigh);
+    }
+  }, [audioEngineActive, id, eqLow, eqMid, eqHigh]);
+
+  // Sync 8-band EQ to real filters
+  useEffect(() => {
+    if (audioEngineActive) {
+      updateAllEQBands(id, eqBands);
+    }
+  }, [audioEngineActive, id, eqBands]);
 
   const handleReady = useCallback((player: YT.Player) => {
     setPlayerRef(player);
@@ -62,7 +119,7 @@ export default function Deck({ id, compact }: DeckProps) {
     setPlaying(state === window.YT.PlayerState.PLAYING);
   }, [setPlaying]);
 
-  // Update current time + enforce loop
+  // Update current time + enforce loop + sync audio element
   useEffect(() => {
     if (isPlaying && playerRef) {
       timeUpdateRef.current = setInterval(() => {
@@ -71,9 +128,22 @@ export default function Deck({ id, compact }: DeckProps) {
         const d = playerRef.getDuration?.() ?? 0;
         if (d > 0) setDuration(d);
 
+        // Loop enforcement
         const currentLoop = getDeckStoreById(id).getState().loop;
         if (currentLoop.active && currentLoop.end > 0 && t >= currentLoop.end) {
           playerRef.seekTo(currentLoop.start, true);
+          // Also seek audio element
+          const graph = getDeckGraph(id);
+          if (graph) graph.audio.currentTime = currentLoop.start;
+        }
+
+        // Drift correction: sync audio element to YouTube
+        const graph = getDeckGraph(id);
+        if (graph && graph.audio.readyState >= 2) {
+          const drift = Math.abs(graph.audio.currentTime - t);
+          if (drift > DRIFT_THRESHOLD) {
+            graph.audio.currentTime = t;
+          }
         }
       }, 50);
     } else {
@@ -82,28 +152,77 @@ export default function Deck({ id, compact }: DeckProps) {
     return () => { if (timeUpdateRef.current) clearInterval(timeUpdateRef.current); };
   }, [isPlaying, playerRef, setCurrentTime, setDuration, id]);
 
-  const handlePlay = () => playerRef?.playVideo();
-  const handlePause = () => playerRef?.pauseVideo();
+  // Sync play/pause to audio element
+  useEffect(() => {
+    const graph = getDeckGraph(id);
+    if (!graph) return;
+
+    if (isPlaying) {
+      graph.audio.play().catch(() => { /* autoplay blocked */ });
+    } else {
+      graph.audio.pause();
+    }
+  }, [isPlaying, id, audioEngineActive]);
+
+  const handlePlay = () => {
+    playerRef?.playVideo();
+    // Mute YouTube if audio engine is active
+    if (getDeckGraph(id)) {
+      playerRef?.setVolume(0);
+    }
+  };
+
+  const handlePause = () => {
+    playerRef?.pauseVideo();
+    const graph = getDeckGraph(id);
+    if (graph) graph.audio.pause();
+  };
+
   const handleStop = () => {
     playerRef?.pauseVideo();
     playerRef?.seekTo(0, true);
     setCurrentTime(0);
     clearLoop();
+    const graph = getDeckGraph(id);
+    if (graph) {
+      graph.audio.pause();
+      graph.audio.currentTime = 0;
+    }
   };
+
   const handleSeek = (seconds: number) => {
     playerRef?.seekTo(seconds, true);
     setCurrentTime(seconds);
+    const graph = getDeckGraph(id);
+    if (graph) graph.audio.currentTime = seconds;
   };
+
   const handleNudge = (seconds: number) => {
     if (!playerRef) return;
     const t = playerRef.getCurrentTime?.() ?? 0;
-    playerRef.seekTo(Math.max(0, t + seconds), true);
+    const newTime = Math.max(0, t + seconds);
+    playerRef.seekTo(newTime, true);
+    const graph = getDeckGraph(id);
+    if (graph) graph.audio.currentTime = newTime;
   };
+
   const handleScratch = (delta: number) => {
     if (!playerRef) return;
     const t = playerRef.getCurrentTime?.() ?? 0;
-    playerRef.seekTo(Math.max(0, t + delta), true);
+    const newTime = Math.max(0, t + delta);
+    playerRef.seekTo(newTime, true);
+    const graph = getDeckGraph(id);
+    if (graph) graph.audio.currentTime = newTime;
   };
+
+  // Audio status indicator
+  const audioStatus = audioEngineActive
+    ? 'active'
+    : audioError
+      ? 'error'
+      : audioStreamUrl === null && videoId
+        ? 'loading'
+        : 'fallback';
 
   return (
     <div
@@ -129,6 +248,24 @@ export default function Deck({ id, compact }: DeckProps) {
         {isPlaying && (
           <span className="text-[9px] px-1.5 py-0.5 rounded-full animate-pulse" style={{ background: `${ACCENT_HEX[id]}30`, color: accent }}>
             LIVE
+          </span>
+        )}
+        {/* Audio engine status indicator */}
+        {videoId && (
+          <span
+            className="text-[8px] px-1.5 py-0.5 rounded-full font-bold tracking-wider ml-auto"
+            style={{
+              background: audioStatus === 'active' ? '#22c55e20' : audioStatus === 'error' ? '#ef444420' : '#eab30820',
+              color: audioStatus === 'active' ? '#22c55e' : audioStatus === 'error' ? '#ef4444' : '#eab308',
+            }}
+            title={
+              audioStatus === 'active' ? 'Real audio processing via Web Audio API'
+                : audioStatus === 'error' ? `Fallback: ${audioError}`
+                  : audioStatus === 'loading' ? 'Loading audio stream...'
+                    : 'Video-only mode (EQ is visual)'
+            }
+          >
+            {audioStatus === 'active' ? 'AUDIO' : audioStatus === 'loading' ? '...' : 'VIDEO ONLY'}
           </span>
         )}
       </div>

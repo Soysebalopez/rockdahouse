@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_SAMPLES, type SampleDef } from '@/lib/samples';
+import { getAudioContext } from '@/hooks/useAudioEngine';
 
 export interface Pad {
   name: string;
@@ -57,7 +58,10 @@ export const useSamplerStore = create<SamplerState & SamplerActions>((set, get) 
     const state = get();
     if (state.audioCtx) return; // Already initialized
 
-    const audioCtx = new AudioContext();
+    // Try to reuse the shared AudioContext from the audio engine
+    const sharedCtx = getAudioContext();
+    const audioCtx = sharedCtx ?? new AudioContext();
+
     const masterGain = audioCtx.createGain();
     masterGain.gain.value = state.volume;
     masterGain.connect(audioCtx.destination);
