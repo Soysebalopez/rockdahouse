@@ -2,10 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import ytdl from '@distube/ytdl-core';
 
 export const runtime = 'nodejs';
+export const maxDuration = 30; // Allow up to 30s for slow YouTube responses
 
 // In-memory cache: videoId → { url, contentType, expiresAt }
 const cache = new Map<string, { url: string; contentType: string; expiresAt: number }>();
 const TTL = 5 * 60 * 60 * 1000; // 5 hours (URLs expire ~6h)
+
+// Create agent with YouTube cookies to bypass datacenter IP blocks
+let agent: ReturnType<typeof ytdl.createAgent> | undefined;
+function getAgent() {
+  if (agent) return agent;
+  const cookieEnv = process.env.YOUTUBE_COOKIES;
+  if (!cookieEnv) return undefined;
+  try {
+    const cookies = JSON.parse(cookieEnv);
+    agent = ytdl.createAgent(cookies);
+    return agent;
+  } catch (err) {
+    console.error('[/api/stream] Failed to parse YOUTUBE_COOKIES:', err);
+    return undefined;
+  }
+}
 
 // Evict expired entries periodically
 function evictExpired() {
@@ -34,7 +51,10 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const info = await ytdl.getInfo(videoId);
+    const ytAgent = getAgent();
+    const info = await ytdl.getInfo(videoId, {
+      ...(ytAgent ? { agent: ytAgent } : {}),
+    });
 
     // Pick highest quality audio-only format
     const audioFormats = ytdl.filterFormats(info.formats, 'audioonly');
