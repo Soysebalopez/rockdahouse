@@ -66,13 +66,42 @@ function airhorn(ctx: AudioContext): AudioBuffer {
 }
 
 function scratch(ctx: AudioContext): AudioBuffer {
-  return createBuffer(ctx, 0.25, (t) => {
-    const noise = Math.random() * 2 - 1;
-    const freq = 80 + Math.sin(t * 30) * 60;
-    const tone = Math.sin(2 * Math.PI * freq * t);
-    const env = Math.sin(t / 0.25 * Math.PI);
-    return (noise * 0.4 + tone * 0.6) * env * 0.7;
-  });
+  // Short "baby scratch" — one quick forward-back chirp
+  // Uses phase accumulation for realistic vinyl speed changes
+  const sampleRate = ctx.sampleRate;
+  const duration = 0.3;
+  const length = Math.floor(sampleRate * duration);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+  let phase = 0;
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    // Speed curve: fast forward then fast back (asymmetric for realism)
+    const norm = t / duration;
+    const speed = norm < 0.4
+      ? Math.sin(norm / 0.4 * Math.PI) * 2.5       // forward push
+      : -Math.sin((norm - 0.4) / 0.6 * Math.PI) * 1.8; // pull back (slower)
+
+    // Accumulate phase — this is what makes it sound like a real record
+    phase += speed * 280 / sampleRate;
+
+    // Rich source: sawtooth + harmonics (simulates music content on vinyl)
+    const saw = 2 * (phase - Math.floor(phase + 0.5));
+    const harm2 = Math.sin(2 * Math.PI * phase * 2) * 0.3;
+    const harm3 = Math.sin(2 * Math.PI * phase * 3.01) * 0.15;
+    const source = saw * 0.6 + harm2 + harm3;
+
+    // Vinyl texture: light crackle + hiss
+    const hiss = (Math.random() * 2 - 1) * 0.08;
+    const crackle = Math.random() < 0.02 ? (Math.random() - 0.5) * 0.4 : 0;
+
+    // Amplitude envelope
+    const env = Math.min(1, t * 40) * Math.min(1, (duration - t) * 20);
+
+    data[i] = Math.max(-1, Math.min(1, (source + hiss + crackle) * env * 0.75));
+  }
+  return buffer;
 }
 
 function drop(ctx: AudioContext): AudioBuffer {
@@ -92,17 +121,47 @@ function siren(ctx: AudioContext): AudioBuffer {
 }
 
 function scratchLong(ctx: AudioContext): AudioBuffer {
-  // Vinyl scratch: forward-back wicky-wicky sound
-  return createBuffer(ctx, 0.6, (t) => {
-    // Oscillating pitch to simulate vinyl forward/back
-    const speed = Math.sin(2 * Math.PI * 6 * t); // 6 Hz back-and-forth
-    const freq = 200 + speed * 150;
-    const tone = Math.sin(2 * Math.PI * freq * t);
-    const noise = (Math.random() * 2 - 1) * 0.3;
-    const crackle = Math.random() < 0.05 ? (Math.random() - 0.5) * 0.8 : 0;
-    const env = Math.min(1, t * 15) * Math.min(1, (0.6 - t) * 8);
-    return (tone * 0.5 + noise + crackle) * env * 0.7;
-  });
+  // Long "transformer scratch" — multiple wicky-wicky chirps
+  const sampleRate = ctx.sampleRate;
+  const duration = 0.8;
+  const length = Math.floor(sampleRate * duration);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+  let phase = 0;
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const norm = t / duration;
+
+    // 3 back-and-forth movements with decreasing intensity
+    // Each cycle: fast forward chirp + pull back
+    const cycleRate = 7; // Hz — speed of back-and-forth
+    const speed = Math.sin(2 * Math.PI * cycleRate * t)
+      * (2.5 - norm * 1.5) // slow down over time
+      * (1 + 0.5 * Math.sin(2 * Math.PI * 1.5 * t)); // add rhythmic variation
+
+    phase += speed * 320 / sampleRate;
+
+    // Rich harmonic source (sawtooth + sub harmonics = "music on record")
+    const saw = 2 * (phase - Math.floor(phase + 0.5));
+    const sub = Math.sin(2 * Math.PI * phase * 0.5) * 0.2;
+    const harm2 = Math.sin(2 * Math.PI * phase * 2.02) * 0.25;
+    const harm4 = Math.sin(2 * Math.PI * phase * 4.01) * 0.1;
+    const source = saw * 0.55 + sub + harm2 + harm4;
+
+    // Vinyl texture
+    const hiss = (Math.random() * 2 - 1) * 0.06;
+    const crackle = Math.random() < 0.03 ? (Math.random() - 0.5) * 0.35 : 0;
+
+    // "Transformer" effect: quick volume cuts that real DJs do with the fader
+    const cutFreq = 14; // Hz
+    const cut = (Math.sin(2 * Math.PI * cutFreq * t) > -0.3) ? 1 : 0.05;
+
+    const env = Math.min(1, t * 20) * Math.min(1, (duration - t) * 12);
+
+    data[i] = Math.max(-1, Math.min(1, (source + hiss + crackle) * env * cut * 0.7));
+  }
+  return buffer;
 }
 
 function rim(ctx: AudioContext): AudioBuffer {
