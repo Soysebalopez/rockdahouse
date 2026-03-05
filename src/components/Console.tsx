@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef } from 'react';
 import Deck from './Deck';
 import Mixer from './Mixer';
+import BPMSync from './BPMSync';
+import CueControls from './CueControls';
 import SearchPanel from './SearchPanel';
 import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
@@ -88,6 +90,12 @@ export default function Console() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <Deck id="A" />
         <Deck id="B" />
+      </div>
+
+      {/* BPM Sync + Cue */}
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <BPMSync />
+        <CueControls />
       </div>
 
       {/* Mixer */}

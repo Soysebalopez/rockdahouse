@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import YouTubePlayer from './YouTubePlayer';
+import Waveform from './Waveform';
 import TransportControls from './TransportControls';
 import EQControls from './EQControls';
 import BPMDisplay from './BPMDisplay';
@@ -16,6 +17,16 @@ interface DeckProps {
 const ACCENTS: Record<DeckId, string> = {
   A: 'var(--accent-a)',
   B: 'var(--accent-b)',
+};
+
+const ACCENT_HEX: Record<DeckId, string> = {
+  A: '#ec4899',
+  B: '#3b82f6',
+};
+
+const DIM_HEX: Record<DeckId, string> = {
+  A: '#9d174d',
+  B: '#1e40af',
 };
 
 export default function Deck({ id }: DeckProps) {
@@ -76,6 +87,8 @@ export default function Deck({ id }: DeckProps) {
 
       <YouTubePlayer deckId={id} videoId={videoId} onReady={handleReady} onStateChange={handleStateChange} />
 
+      <Waveform videoId={videoId} currentTime={currentTime} duration={duration} accentColor={ACCENT_HEX[id]} dimColor={DIM_HEX[id]} />
+
       <TrackInfo title={title} channel={channel} currentTime={currentTime} duration={duration} onSeek={handleSeek} accentColor={accent} />
 
       <div className="flex items-center gap-4">
@@ -89,7 +102,7 @@ export default function Deck({ id }: DeckProps) {
           onChangeLow={(v) => setEQ('low', v)}
           accentColor={accent}
         />
-        <BPMDisplay onBpmChange={setBPM} accentColor={accent} />
+        <BPMDisplay trackTitle={title} onBpmChange={setBPM} accentColor={accent} />
       </div>
     </div>
   );
