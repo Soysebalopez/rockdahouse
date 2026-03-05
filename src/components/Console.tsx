@@ -177,11 +177,11 @@ export default function Console() {
         onCrossfaderChange={setCrossfaderPosition}
       />
 
-      {/* Sampler */}
-      <Sampler />
-
-      {/* Search + Playlist */}
-      <SearchPanel onLoadToDeck={handleLoadToDeck} />
+      {/* Search + Sampler row */}
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 items-stretch">
+        <SearchPanel onLoadToDeck={handleLoadToDeck} />
+        <Sampler />
+      </div>
       <Playlist onLoadToDeck={handleLoadToDeck} />
     </div>
   );

@@ -42,7 +42,7 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="w-full rounded-xl p-3" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
+    <div className="w-full rounded-xl p-3 flex flex-col h-full" style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-default)' }}>
       <input
         ref={inputRef}
         type="text"
@@ -57,7 +57,7 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
         }}
         data-search-input
       />
-      <div className="mt-2 overflow-y-auto" style={{ maxHeight: 200 }}>
+      <div className="mt-2 overflow-y-auto flex-1">
         {loading && (
           <div className="text-sm py-4 text-center" style={{ color: 'var(--text-muted)' }}>Searching...</div>
         )}
