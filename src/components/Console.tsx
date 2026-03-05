@@ -12,48 +12,58 @@ import type { DeckId } from '@/lib/types';
 export default function Console() {
   useKeyboardShortcuts();
 
-  const deckA = useDeckAStore();
-  const deckB = useDeckBStore();
-  const mixer = useMixerStore();
+  // Subscribe only to the specific slices needed for rendering
+  const volumeA = useDeckAStore((s) => s.volume);
+  const volumeB = useDeckBStore((s) => s.volume);
+  const setVolumeA = useDeckAStore((s) => s.setVolume);
+  const setVolumeB = useDeckBStore((s) => s.setVolume);
+
+  const crossfaderPosition = useMixerStore((s) => s.crossfaderPosition);
+  const masterVolume = useMixerStore((s) => s.masterVolume);
+  const vuLevelA = useMixerStore((s) => s.vuLevelA);
+  const vuLevelB = useMixerStore((s) => s.vuLevelB);
+  const vuLevelMaster = useMixerStore((s) => s.vuLevelMaster);
+  const setCrossfaderPosition = useMixerStore((s) => s.setCrossfaderPosition);
+  const setMasterVolume = useMixerStore((s) => s.setMasterVolume);
 
   const vuAnimRef = useRef<number>(undefined);
 
   // Apply crossfader + master volume to YouTube players
   useEffect(() => {
-    const pos = mixer.crossfaderPosition;
-    // Equal power curve
-    const gainA = Math.cos(pos * Math.PI / 2);
-    const gainB = Math.sin(pos * Math.PI / 2);
+    const gainA = Math.cos(crossfaderPosition * Math.PI / 2);
+    const gainB = Math.sin(crossfaderPosition * Math.PI / 2);
 
-    const effectiveA = deckA.volume * gainA * mixer.masterVolume;
-    const effectiveB = deckB.volume * gainB * mixer.masterVolume;
+    const playerA = useDeckAStore.getState().playerRef;
+    const playerB = useDeckBStore.getState().playerRef;
 
-    deckA.playerRef?.setVolume(effectiveA * 100);
-    deckB.playerRef?.setVolume(effectiveB * 100);
-  }, [mixer.crossfaderPosition, mixer.masterVolume, deckA.volume, deckB.volume, deckA.playerRef, deckB.playerRef]);
+    playerA?.setVolume(volumeA * gainA * masterVolume * 100);
+    playerB?.setVolume(volumeB * gainB * masterVolume * 100);
+  }, [crossfaderPosition, masterVolume, volumeA, volumeB]);
 
-  // Simulate VU meters
+  // Simulate VU meters — runs outside React render cycle via getState()
   useEffect(() => {
     const tick = () => {
-      const baseA = deckA.isPlaying ? deckA.volume * 0.7 : 0;
-      const baseB = deckB.isPlaying ? deckB.volume * 0.7 : 0;
-      const pos = useMixerStore.getState().crossfaderPosition;
-      const master = useMixerStore.getState().masterVolume;
-      const gainA = Math.cos(pos * Math.PI / 2);
-      const gainB = Math.sin(pos * Math.PI / 2);
+      const dA = useDeckAStore.getState();
+      const dB = useDeckBStore.getState();
+      const mx = useMixerStore.getState();
 
-      mixer.setVuLevelA(baseA + (baseA > 0 ? Math.random() * 0.2 : 0));
-      mixer.setVuLevelB(baseB + (baseB > 0 ? Math.random() * 0.2 : 0));
-      mixer.setVuLevelMaster(
-        Math.max(baseA * gainA, baseB * gainB) * master +
+      const baseA = dA.isPlaying ? dA.volume * 0.7 : 0;
+      const baseB = dB.isPlaying ? dB.volume * 0.7 : 0;
+      const gainA = Math.cos(mx.crossfaderPosition * Math.PI / 2);
+      const gainB = Math.sin(mx.crossfaderPosition * Math.PI / 2);
+
+      mx.setVuLevelA(baseA + (baseA > 0 ? Math.random() * 0.2 : 0));
+      mx.setVuLevelB(baseB + (baseB > 0 ? Math.random() * 0.2 : 0));
+      mx.setVuLevelMaster(
+        Math.max(baseA * gainA, baseB * gainB) * mx.masterVolume +
         (baseA + baseB > 0 ? Math.random() * 0.1 : 0)
       );
 
       vuAnimRef.current = requestAnimationFrame(tick);
     };
-    tick();
+    vuAnimRef.current = requestAnimationFrame(tick);
     return () => { if (vuAnimRef.current) cancelAnimationFrame(vuAnimRef.current); };
-  }, [deckA.isPlaying, deckB.isPlaying, deckA.volume, deckB.volume, mixer]);
+  }, []);
 
   const handleLoadToDeck = useCallback((videoId: string, title: string, channel: string, thumbnail: string, deckId: DeckId) => {
     const store = deckId === 'A' ? useDeckAStore : useDeckBStore;
@@ -85,17 +95,17 @@ export default function Console() {
 
       {/* Mixer */}
       <Mixer
-        volumeA={deckA.volume}
-        volumeB={deckB.volume}
-        masterVolume={mixer.masterVolume}
-        crossfaderPosition={mixer.crossfaderPosition}
-        vuLevelA={mixer.vuLevelA}
-        vuLevelB={mixer.vuLevelB}
-        vuLevelMaster={mixer.vuLevelMaster}
-        onVolumeAChange={deckA.setVolume}
-        onVolumeBChange={deckB.setVolume}
-        onMasterVolumeChange={mixer.setMasterVolume}
-        onCrossfaderChange={mixer.setCrossfaderPosition}
+        volumeA={volumeA}
+        volumeB={volumeB}
+        masterVolume={masterVolume}
+        crossfaderPosition={crossfaderPosition}
+        vuLevelA={vuLevelA}
+        vuLevelB={vuLevelB}
+        vuLevelMaster={vuLevelMaster}
+        onVolumeAChange={setVolumeA}
+        onVolumeBChange={setVolumeB}
+        onMasterVolumeChange={setMasterVolume}
+        onCrossfaderChange={setCrossfaderPosition}
       />
 
       {/* Search */}
