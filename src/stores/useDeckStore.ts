@@ -14,6 +14,10 @@ interface LoopState {
   beats: number | null; // 4, 8, 16 or null for manual
 }
 
+// 8-band EQ: each band is a gain value from -12 to +12 dB
+export const EQ_BANDS = ['32', '64', '125', '250', '500', '1K', '2K', '4K'] as const;
+export type EQBandLabel = typeof EQ_BANDS[number];
+
 interface DeckState {
   videoId: string | null;
   title: string;
@@ -25,6 +29,8 @@ interface DeckState {
   eqLow: number;
   eqMid: number;
   eqHigh: number;
+  eqBands: number[]; // 8-band gains (-12 to +12)
+  eqPanelOpen: boolean;
   bpm: number | null;
   playerRef: YT.Player | null;
   // Loop
@@ -39,6 +45,9 @@ interface DeckActions {
   setPlaying: (playing: boolean) => void;
   setVolume: (volume: number) => void;
   setEQ: (band: 'low' | 'mid' | 'high', gain: number) => void;
+  setEQBand: (index: number, gain: number) => void;
+  resetEQBands: () => void;
+  toggleEQPanel: () => void;
   setBPM: (bpm: number | null) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
@@ -51,6 +60,8 @@ interface DeckActions {
 
 const defaultLoop: LoopState = { active: false, start: 0, end: 0, beats: null };
 
+const defaultEQBands = [0, 0, 0, 0, 0, 0, 0, 0];
+
 const defaultDeckState: DeckState = {
   videoId: null,
   title: '',
@@ -62,6 +73,8 @@ const defaultDeckState: DeckState = {
   eqLow: 0,
   eqMid: 0,
   eqHigh: 0,
+  eqBands: [...defaultEQBands],
+  eqPanelOpen: false,
   bpm: null,
   playerRef: null,
   loop: { ...defaultLoop },
@@ -90,6 +103,13 @@ function createDeckStore() {
         case 'high': return set({ eqHigh: gain });
       }
     },
+    setEQBand: (index, gain) => set((s) => {
+      const eqBands = [...s.eqBands];
+      eqBands[index] = gain;
+      return { eqBands };
+    }),
+    resetEQBands: () => set({ eqBands: [...defaultEQBands] }),
+    toggleEQPanel: () => set((s) => ({ eqPanelOpen: !s.eqPanelOpen })),
     setBPM: (bpm) => set({ bpm }),
     setCurrentTime: (time) => set({ currentTime: time }),
     setDuration: (duration) => set({ duration }),

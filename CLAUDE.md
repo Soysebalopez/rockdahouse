@@ -9,7 +9,7 @@ Browser-based DJ mixing console that uses YouTube as the audio source. Two decks
 ## Stack
 
 - **Framework:** Next.js 15 (App Router, TypeScript)
-- **Styling:** Tailwind CSS v4 + CSS custom properties (dark theme)
+- **Styling:** Tailwind CSS v4 + CSS custom properties (dark/light themes)
 - **Audio:** YouTube Player API (`player.setVolume()` + `setPlaybackRate()`)
 - **BPM:** Spotify API (server-side via `/api/bpm`) + tap tempo fallback
 - **State:** Zustand (deck A, deck B, mixer, search, playlist stores)
@@ -48,7 +48,8 @@ src/
 │   ├── Playlist.tsx          # Persistent playlist with drag-to-reorder
 │   ├── MidiStatus.tsx        # MIDI connection indicator + learn panel
 │   ├── FXControls.tsx        # Per-deck effects: brake, spinback, beat repeat, echo out, filter sweep
-│   └── Sampler.tsx           # 8-pad sampler with Web Audio API, custom sample upload
+│   ├── Sampler.tsx           # 16-pad sampler with Web Audio API, custom sample upload
+│   └── Equalizer.tsx         # Canvas-based rainbow bar equalizer (footer)
 ├── stores/
 │   ├── useDeckStore.ts       # 4 deck instances (A/B/C/D) via factory, loop + hotCues
 │   ├── useMixerStore.ts      # Crossfader, master volume, VU levels, deck mode, crossfader assign
@@ -56,7 +57,8 @@ src/
 │   ├── usePlaylistStore.ts   # Persistent playlist (localStorage)
 │   ├── useMidiStore.ts       # MIDI mappings, learn mode, connection state (persistent)
 │   ├── useEffectsStore.ts    # Per-deck effect state + effect runners (brake, spinback, etc.)
-│   └── useSamplerStore.ts    # 8-pad sampler: AudioContext, buffers, trigger/stop, custom upload
+│   ├── useSamplerStore.ts    # 16-pad sampler: AudioContext, buffers, trigger/stop, custom upload
+│   └── useThemeStore.ts      # Theme (dark/light), persisted, syncs data-theme attribute
 ├── hooks/
 │   ├── useYouTubePlayer.ts   # YouTube IFrame API initialization & control
 │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
@@ -139,12 +141,59 @@ npm run lint   # ESLint
 ### P6
 - [x] Per-deck effects: Brake, Spinback, Beat Repeat, Echo Out, Filter Sweep
 - [x] Effects work within YouTube Player API constraints (setPlaybackRate, setVolume, seekTo)
-- [x] 8-pad sampler with Web Audio API (synthesized samples, no external files)
+- [x] 16-pad sampler with Web Audio API (synthesized samples including realistic vinyl scratch)
 - [x] Custom sample upload via file input (decodeAudioData)
 - [x] Loop mode per sampler pad
 - [x] MIDI learn for all FX triggers and sampler pads
 
+### P7
+- [x] Skin system: dark + light themes via CSS custom properties + `data-theme` attribute
+- [x] Theme toggle button in header, persisted to localStorage
+- [x] Anti-flash script in layout.tsx (reads theme before paint)
+- [x] Canvas-based rainbow bar equalizer in footer (32 bars, rAF loop)
+
 ## Future Phases
 
 - P4: User auth (Supabase), cloud playlists, share sets by URL
-- P7: Recording, set export
+- P8: Recording, set export
+
+## Monetization Analysis (YouTube API costs)
+
+### API Consumption
+- YouTube Data API v3: 10,000 units/day per API key, `search.list` = 100 units/call → **100 searches/day/key**
+- Spotify API (BPM lookup): Free, only rate-limited
+- YouTube Player embed: Free, unlimited
+
+### Usage Estimates per User Type
+| Profile | Searches/session | Sessions/month |
+|---------|-----------------|----------------|
+| One Nighter (6h+ party) | 150-200 | 1 |
+| Basic (regular DJ) | 15-25/day | 20 days |
+| Pro (daily DJ) | 30-50/day | 30 days |
+
+### Key Insight: 1 One Nighter ≈ 1 full API key/day
+With server-side cache (reduces ~50% repeated queries like "bad bunny"), a party DJ still uses ~100 unique searches = 10,000 units.
+
+### Proposed Plans
+| Plan | Price | Searches included | Notes |
+|------|-------|-------------------|-------|
+| **One Nighter** | $2.99 USD (24h) | 250 | "Less than a drink" — covers 6-8h party |
+| **Basic** | $5.99/month | 800 (~27/day) | Practice + 2-3 gigs/month |
+| **Pro** | $11.99/month | 3000 (~100/day) | Daily use, basically unlimited |
+
+### Infrastructure Costs
+| Service | Monthly |
+|---------|---------|
+| Vercel Pro | $20 |
+| Vercel KV (cache) | $0-5 |
+| Domain | ~$1 |
+| **Total** | ~$21-26 |
+
+### Break-even: 5 Basic users or 3 Pro users
+### Target: 100 Basic ($599) or 50 Pro ($599)
+
+### Prerequisites Before Monetizing
+1. **Server-side rate limiting** (current localStorage limit is bypassable)
+2. **Search result cache** (Redis/Vercel KV — dedup popular queries)
+3. **API key pool rotation** (distribute quota across N keys for peak Saturday nights)
+4. **User auth** (P4: Supabase — link plan ↔ user)
