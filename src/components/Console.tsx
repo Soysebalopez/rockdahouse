@@ -9,7 +9,9 @@ import SearchPanel from './SearchPanel';
 import Playlist from './Playlist';
 import MidiStatus from './MidiStatus';
 import Sampler from './Sampler';
+import Equalizer from './Equalizer';
 import { usePlaylistStore } from '@/stores/usePlaylistStore';
+import { useThemeStore } from '@/stores/useThemeStore';
 import { useMidi } from '@/hooks/useMidi';
 import { useDeckAStore, useDeckBStore, useDeckCStore, useDeckDStore, getDeckStoreById } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
@@ -28,6 +30,9 @@ const ACCENT_COLORS: Record<DeckId, string> = {
 export default function Console() {
   useKeyboardShortcuts();
   useMidi();
+
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
 
   const deckMode = useMixerStore((s) => s.deckMode);
   const setDeckMode = useMixerStore((s) => s.setDeckMode);
@@ -150,6 +155,18 @@ export default function Console() {
           <span>
             <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono" style={{ background: 'var(--bg-elevated)' }}>P</kbd> playlist
           </span>
+          <button
+            onClick={toggleTheme}
+            className="px-2 py-1 rounded text-[10px] font-bold"
+            style={{
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-default)',
+            }}
+            title={`Switch to ${theme === 'dark' ? 'Apple' : 'Dark'} skin`}
+          >
+            {theme === 'dark' ? '☀ APPLE' : '● DARK'}
+          </button>
           <MidiStatus />
         </div>
       </header>
@@ -183,6 +200,7 @@ export default function Console() {
         <Sampler />
       </div>
       <Playlist onLoadToDeck={handleLoadToDeck} />
+      <Equalizer />
     </div>
   );
 }

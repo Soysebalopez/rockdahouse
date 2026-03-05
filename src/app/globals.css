@@ -54,6 +54,56 @@
   --radius-lg: 16px;
 }
 
+/* ── Apple Skin (Jony Ive-inspired) ── */
+[data-theme="apple"] {
+  /* Backgrounds */
+  --bg-primary: #f5f5f7;
+  --bg-surface: #ffffff;
+  --bg-elevated: #f0f0f5;
+  --bg-hover: #e8e8ed;
+
+  /* Borders */
+  --border-default: #d2d2d7;
+  --border-subtle: #e5e5ea;
+  --border-focus: #e8a0bf;
+
+  /* Text */
+  --text-primary: #1d1d1f;
+  --text-secondary: #6e6e73;
+  --text-muted: #aeaeb2;
+
+  /* Accent — Deck A (Pastel Rose) */
+  --accent-a: #e8a0bf;
+  --accent-a-dim: #f2c6d9;
+  --waveform-a: #e8a0bf;
+
+  /* Accent — Deck B (Pastel Sky) */
+  --accent-b: #7eb8e0;
+  --accent-b-dim: #b3d6f0;
+  --waveform-b: #7eb8e0;
+
+  /* Accent — Deck C (Pastel Mint) */
+  --accent-c: #7fd4a8;
+  --accent-c-dim: #b3e8cc;
+  --waveform-c: #7fd4a8;
+
+  /* Accent — Deck D (Pastel Peach) */
+  --accent-d: #f0b48a;
+  --accent-d-dim: #f5d0b0;
+  --waveform-d: #f0b48a;
+
+  /* VU Meter */
+  --vu-green: #7fd4a8;
+  --vu-yellow: #f0d060;
+  --vu-red: #e88080;
+
+  /* Controls */
+  --knob-bg: #f0f0f5;
+  --knob-ring: #d2d2d7;
+  --fader-track: #d2d2d7;
+  --fader-thumb: #1d1d1f;
+}
+
 * {
   box-sizing: border-box;
 }
