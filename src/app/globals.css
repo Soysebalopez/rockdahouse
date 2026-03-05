@@ -48,6 +48,9 @@
   --fader-track: #2a2a3a;
   --fader-thumb: #e2e8f0;
 
+  /* Title */
+  --title-gradient: linear-gradient(135deg, #ec4899, #3b82f6);
+
   /* Misc */
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -102,6 +105,9 @@
   --knob-ring: #d2d2d7;
   --fader-track: #d2d2d7;
   --fader-thumb: #1d1d1f;
+
+  /* Title — solid dark, no gradient (clean Ive style) */
+  --title-gradient: linear-gradient(135deg, #1d1d1f, #1d1d1f);
 }
 
 * {

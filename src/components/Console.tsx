@@ -119,7 +119,7 @@ export default function Console() {
       <header className="flex items-center justify-between py-3 px-1">
         <div className="flex items-center gap-3">
           <span className="text-xl font-black tracking-tight" style={{
-            background: 'linear-gradient(135deg, var(--accent-a), var(--accent-b))',
+            background: 'var(--title-gradient)',
             WebkitBackgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>
