@@ -46,13 +46,17 @@ src/
 │   ├── SearchPanel.tsx       # YouTube search with debounce
 │   ├── SearchResult.tsx      # Result with + (playlist) and → A/B/C/D buttons
 │   ├── Playlist.tsx          # Persistent playlist with drag-to-reorder
-│   └── MidiStatus.tsx        # MIDI connection indicator + learn panel
+│   ├── MidiStatus.tsx        # MIDI connection indicator + learn panel
+│   ├── FXControls.tsx        # Per-deck effects: brake, spinback, beat repeat, echo out, filter sweep
+│   └── Sampler.tsx           # 8-pad sampler with Web Audio API, custom sample upload
 ├── stores/
 │   ├── useDeckStore.ts       # 4 deck instances (A/B/C/D) via factory, loop + hotCues
 │   ├── useMixerStore.ts      # Crossfader, master volume, VU levels, deck mode, crossfader assign
 │   ├── useSearchStore.ts     # Search query, results, loading
 │   ├── usePlaylistStore.ts   # Persistent playlist (localStorage)
-│   └── useMidiStore.ts       # MIDI mappings, learn mode, connection state (persistent)
+│   ├── useMidiStore.ts       # MIDI mappings, learn mode, connection state (persistent)
+│   ├── useEffectsStore.ts    # Per-deck effect state + effect runners (brake, spinback, etc.)
+│   └── useSamplerStore.ts    # 8-pad sampler: AudioContext, buffers, trigger/stop, custom upload
 ├── hooks/
 │   ├── useYouTubePlayer.ts   # YouTube IFrame API initialization & control
 │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
@@ -60,7 +64,8 @@ src/
 │   └── useTapTempo.ts        # BPM calculation from tap intervals
 └── lib/
     ├── youtube.ts            # YouTube Data API v3 search client
-    └── types.ts              # TypeScript interfaces
+    ├── types.ts              # TypeScript interfaces
+    └── samples.ts            # Synthesized audio samples (kick, snare, hihat, etc.)
 ```
 
 ## Key Technical Decisions
@@ -131,7 +136,15 @@ npm run lint   # ESLint
 - [x] Mixer expanded to N-channel with per-deck VU meters
 - [x] Search/playlist show C/D load buttons in 4-deck mode
 
+### P6
+- [x] Per-deck effects: Brake, Spinback, Beat Repeat, Echo Out, Filter Sweep
+- [x] Effects work within YouTube Player API constraints (setPlaybackRate, setVolume, seekTo)
+- [x] 8-pad sampler with Web Audio API (synthesized samples, no external files)
+- [x] Custom sample upload via file input (decodeAudioData)
+- [x] Loop mode per sampler pad
+- [x] MIDI learn for all FX triggers and sampler pads
+
 ## Future Phases
 
 - P4: User auth (Supabase), cloud playlists, share sets by URL
-- P6: Recording, effects (filter, reverb), sampler
+- P7: Recording, set export

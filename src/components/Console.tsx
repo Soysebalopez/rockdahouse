@@ -8,6 +8,7 @@ import CueControls from './CueControls';
 import SearchPanel from './SearchPanel';
 import Playlist from './Playlist';
 import MidiStatus from './MidiStatus';
+import Sampler from './Sampler';
 import { usePlaylistStore } from '@/stores/usePlaylistStore';
 import { useMidi } from '@/hooks/useMidi';
 import { useDeckAStore, useDeckBStore, useDeckCStore, useDeckDStore, getDeckStoreById } from '@/stores/useDeckStore';
@@ -175,6 +176,9 @@ export default function Console() {
         onMasterVolumeChange={setMasterVolume}
         onCrossfaderChange={setCrossfaderPosition}
       />
+
+      {/* Sampler */}
+      <Sampler />
 
       {/* Search + Playlist */}
       <SearchPanel onLoadToDeck={handleLoadToDeck} />

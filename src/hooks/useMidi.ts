@@ -2,6 +2,9 @@ import { useEffect, useCallback } from 'react';
 import { useMidiStore, type MidiAction } from '@/stores/useMidiStore';
 import { useDeckAStore, useDeckBStore, useDeckCStore, useDeckDStore } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
+import { useEffectsStore, type EffectType } from '@/stores/useEffectsStore';
+import { useSamplerStore } from '@/stores/useSamplerStore';
+import type { DeckId } from '@/lib/types';
 
 function getDeckStore(deck: string) {
   switch (deck) {
@@ -24,6 +27,13 @@ function executeAction(action: MidiAction, value: number) {
   }
   if (action === 'masterVolume') {
     mixer.setMasterVolume(value / 127);
+    return;
+  }
+
+  // Sampler pad triggers
+  if (deck === 'sampler') {
+    const padNum = parseInt(control.replace('pad', ''), 10);
+    if (value > 0 && padNum >= 1 && padNum <= 8) triggerSamplerPad(padNum - 1);
     return;
   }
 
@@ -74,7 +84,34 @@ function executeAction(action: MidiAction, value: number) {
     case 'loop16':
       if (value > 0) toggleBeatLoop(store, 16);
       break;
+    case 'fxBrake':
+      if (value > 0) triggerEffect(deck, 'brake');
+      break;
+    case 'fxSpin':
+      if (value > 0) triggerEffect(deck, 'spinback');
+      break;
+    case 'fxRepeat':
+      if (value > 0) triggerEffect(deck, 'beatRepeat');
+      break;
+    case 'fxEcho':
+      if (value > 0) triggerEffect(deck, 'echoOut');
+      break;
+    case 'fxFilter':
+      if (value > 0) triggerEffect(deck, 'filterSweep');
+      break;
   }
+}
+
+function triggerEffect(deck: string, effect: EffectType) {
+  const deckIdMap: Record<string, DeckId> = { deckA: 'A', deckB: 'B', deckC: 'C', deckD: 'D' };
+  const deckId = deckIdMap[deck];
+  if (deckId) {
+    useEffectsStore.getState().startEffect(deckId, effect);
+  }
+}
+
+function triggerSamplerPad(padIndex: number) {
+  useSamplerStore.getState().triggerPad(padIndex);
 }
 
 function triggerHotCue(store: ReturnType<typeof getDeckStore>, index: number) {

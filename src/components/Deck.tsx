@@ -10,6 +10,7 @@ import BPMDisplay from './BPMDisplay';
 import TrackInfo from './TrackInfo';
 import LoopControls from './LoopControls';
 import HotCues from './HotCues';
+import FXControls from './FXControls';
 import type { DeckId } from '@/lib/types';
 import { getDeckStoreById } from '@/stores/useDeckStore';
 
@@ -190,6 +191,11 @@ export default function Deck({ id, compact }: DeckProps) {
           onSetHotCue={setHotCue}
           onSeek={handleSeek}
         />
+      </div>
+
+      {/* FX row */}
+      <div className="flex items-center gap-3 flex-wrap pt-1" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+        <FXControls deckId={id} accentColor={ACCENT_HEX[id]} />
       </div>
     </div>
   );
