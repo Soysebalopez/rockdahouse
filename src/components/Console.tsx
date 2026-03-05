@@ -74,19 +74,26 @@ export default function Console() {
   return (
     <div className="flex flex-col gap-3 p-4 min-h-screen max-w-[1400px] mx-auto">
       {/* Header */}
-      <header className="flex items-center justify-between py-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            🎧 RockDaHouse
+      <header className="flex items-center justify-between py-3 px-1">
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-black tracking-tight" style={{
+            background: 'linear-gradient(135deg, var(--accent-a), var(--accent-b))',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>
+            ROCKDAHOUSE
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-            MVP
+          <span className="text-[10px] px-2 py-0.5 rounded-full font-medium" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+            v0.2
           </span>
         </div>
-        <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          <kbd className="px-1 py-0.5 rounded text-[10px]" style={{ background: 'var(--bg-elevated)' }}>S</kbd> search
-          <span className="mx-1">·</span>
-          <kbd className="px-1 py-0.5 rounded text-[10px]" style={{ background: 'var(--bg-elevated)' }}>P</kbd> playlist
+        <div className="flex items-center gap-3 text-xs" style={{ color: 'var(--text-muted)' }}>
+          <span>
+            <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono" style={{ background: 'var(--bg-elevated)' }}>S</kbd> search
+          </span>
+          <span>
+            <kbd className="px-1.5 py-0.5 rounded text-[10px] font-mono" style={{ background: 'var(--bg-elevated)' }}>P</kbd> playlist
+          </span>
         </div>
       </header>
 

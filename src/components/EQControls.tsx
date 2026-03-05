@@ -1,6 +1,6 @@
 'use client';
 
-import Fader from './Fader';
+import Knob from './Knob';
 
 interface EQControlsProps {
   eqHigh: number;
@@ -14,10 +14,10 @@ interface EQControlsProps {
 
 export default function EQControls({ eqHigh, eqMid, eqLow, onChangeHigh, onChangeMid, onChangeLow, accentColor }: EQControlsProps) {
   return (
-    <div className="flex gap-3 items-end">
-      <Fader value={eqHigh} onChange={onChangeHigh} label="HI" min={-12} max={12} step={0.5} height={80} accentColor={accentColor} showCenter />
-      <Fader value={eqMid} onChange={onChangeMid} label="MD" min={-12} max={12} step={0.5} height={80} accentColor={accentColor} showCenter />
-      <Fader value={eqLow} onChange={onChangeLow} label="LO" min={-12} max={12} step={0.5} height={80} accentColor={accentColor} showCenter />
+    <div className="flex gap-1 items-start">
+      <Knob value={eqHigh} min={-12} max={12} onChange={onChangeHigh} label="HI" size={38} accentColor={accentColor} />
+      <Knob value={eqMid} min={-12} max={12} onChange={onChangeMid} label="MD" size={38} accentColor={accentColor} />
+      <Knob value={eqLow} min={-12} max={12} onChange={onChangeLow} label="LO" size={38} accentColor={accentColor} />
     </div>
   );
 }
