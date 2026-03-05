@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchStore } from '@/stores/useSearchStore';
-import { searchYouTube } from '@/lib/youtube';
+import { searchYouTube, getSearchesRemaining } from '@/lib/youtube';
 import SearchResult from './SearchResult';
 import type { DeckId } from '@/lib/types';
 
@@ -14,6 +14,7 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
   const { query, results, loading, error, isOpen, setQuery, setResults, setLoading, setError } = useSearchStore();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [remaining, setRemaining] = useState(100);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) {
@@ -24,6 +25,7 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
     try {
       const tracks = await searchYouTube(q);
       setResults(tracks);
+      setRemaining(getSearchesRemaining());
     } catch (err: any) {
       setError(err.message);
     }
@@ -36,6 +38,7 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
   };
 
   useEffect(() => {
+    setRemaining(getSearchesRemaining());
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
@@ -56,8 +59,14 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
           border: '1px solid var(--border-default)',
         }}
         data-search-input
+        disabled={remaining <= 0}
       />
-      <div className="mt-2 overflow-y-auto flex-1">
+      <div className="flex items-center justify-between mt-1 px-1">
+        <span className="text-[9px]" style={{ color: remaining <= 10 ? 'var(--vu-red)' : 'var(--text-muted)' }}>
+          {remaining > 0 ? `${remaining} searches left today` : 'Daily limit reached — resets at midnight'}
+        </span>
+      </div>
+      <div className="mt-1 overflow-y-auto flex-1">
         {loading && (
           <div className="text-sm py-4 text-center" style={{ color: 'var(--text-muted)' }}>Searching...</div>
         )}
