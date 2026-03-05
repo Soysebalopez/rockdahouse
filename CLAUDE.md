@@ -44,16 +44,19 @@ src/
 │   ├── HotCues.tsx           # 3 color-coded cue points per deck
 │   ├── TrackInfo.tsx         # Title + channel + seek bar + time
 │   ├── SearchPanel.tsx       # YouTube search with debounce
-│   ├── SearchResult.tsx      # Result with + (playlist) and → A / → B buttons
-│   └── Playlist.tsx          # Persistent playlist with drag-to-reorder
+│   ├── SearchResult.tsx      # Result with + (playlist) and → A/B/C/D buttons
+│   ├── Playlist.tsx          # Persistent playlist with drag-to-reorder
+│   └── MidiStatus.tsx        # MIDI connection indicator + learn panel
 ├── stores/
-│   ├── useDeckStore.ts       # Per-deck state including loop + hotCues
-│   ├── useMixerStore.ts      # Crossfader, master volume, VU levels
+│   ├── useDeckStore.ts       # 4 deck instances (A/B/C/D) via factory, loop + hotCues
+│   ├── useMixerStore.ts      # Crossfader, master volume, VU levels, deck mode, crossfader assign
 │   ├── useSearchStore.ts     # Search query, results, loading
-│   └── usePlaylistStore.ts   # Persistent playlist (localStorage)
+│   ├── usePlaylistStore.ts   # Persistent playlist (localStorage)
+│   └── useMidiStore.ts       # MIDI mappings, learn mode, connection state (persistent)
 ├── hooks/
 │   ├── useYouTubePlayer.ts   # YouTube IFrame API initialization & control
 │   ├── useKeyboardShortcuts.ts # Global keyboard shortcuts
+│   ├── useMidi.ts            # Web MIDI API: connect, parse messages, execute actions
 │   └── useTapTempo.ts        # BPM calculation from tap intervals
 └── lib/
     ├── youtube.ts            # YouTube Data API v3 search client
@@ -112,8 +115,23 @@ npm run lint   # ESLint
 - [x] Playlist with drag-to-reorder (persistent)
 - [x] UI polish (transitions, hover states, focus rings)
 
+### P3
+- [x] Canvas jog wheels (spinning vinyl + scratch drag)
+- [x] SVG rotary knobs for EQ controls
+- [x] Gradient backgrounds, glow on playing decks
+- [x] LIVE badge animation
+
+### P5
+- [x] Web MIDI API integration with MIDI learn mode
+- [x] Persistent MIDI mappings (localStorage)
+- [x] MidiStatus indicator + learn panel
+- [x] 4-deck mode toggle (2/4 decks)
+- [x] Decks C (green) and D (orange) with full feature parity
+- [x] Crossfader assign per deck (A-side or B-side routing)
+- [x] Mixer expanded to N-channel with per-deck VU meters
+- [x] Search/playlist show C/D load buttons in 4-deck mode
+
 ## Future Phases
 
-- P3: Jog wheels, rotary knobs, animations, visual polish
 - P4: User auth (Supabase), cloud playlists, share sets by URL
-- P5: MIDI controller support, 4 decks, recording
+- P6: Recording, effects (filter, reverb), sampler
