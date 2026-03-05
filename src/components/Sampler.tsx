@@ -42,7 +42,7 @@ export default function Sampler() {
             className="text-[9px] px-1.5 py-0.5 rounded-full"
             style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
           >
-            8 PADS
+            16 PADS
           </span>
         </div>
         <Knob

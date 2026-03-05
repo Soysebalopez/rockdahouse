@@ -29,7 +29,7 @@ interface SamplerActions {
 }
 
 // Track active source nodes outside Zustand
-const activeSources: (AudioBufferSourceNode | null)[] = Array(8).fill(null);
+const activeSources: (AudioBufferSourceNode | null)[] = Array(16).fill(null);
 
 export const useSamplerStore = create<SamplerState & SamplerActions>((set, get) => ({
   isOpen: false,
