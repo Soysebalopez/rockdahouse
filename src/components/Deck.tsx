@@ -53,10 +53,7 @@ export default function Deck({ id }: DeckProps) {
     return () => { if (timeUpdateRef.current) clearInterval(timeUpdateRef.current); };
   }, [isPlaying, playerRef, setCurrentTime, setDuration]);
 
-  // Sync volume to player
-  useEffect(() => {
-    playerRef?.setVolume(volume * 100);
-  }, [volume, playerRef]);
+  // Volume sync is handled by Console.tsx (applies crossfader + master)
 
   const handlePlay = () => playerRef?.playVideo();
   const handlePause = () => playerRef?.pauseVideo();

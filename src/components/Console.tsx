@@ -28,30 +28,27 @@ export default function Console() {
 
   const vuAnimRef = useRef<number>(undefined);
 
-  // Apply crossfader + master volume to YouTube players
-  useEffect(() => {
-    const gainA = Math.cos(crossfaderPosition * Math.PI / 2);
-    const gainB = Math.sin(crossfaderPosition * Math.PI / 2);
-
-    const playerA = useDeckAStore.getState().playerRef;
-    const playerB = useDeckBStore.getState().playerRef;
-
-    playerA?.setVolume(volumeA * gainA * masterVolume * 100);
-    playerB?.setVolume(volumeB * gainB * masterVolume * 100);
-  }, [crossfaderPosition, masterVolume, volumeA, volumeB]);
-
-  // Simulate VU meters — runs outside React render cycle via getState()
+  // Main animation loop: applies volume to YouTube players + simulates VU meters
+  // Runs via getState() to avoid triggering re-renders
   useEffect(() => {
     const tick = () => {
       const dA = useDeckAStore.getState();
       const dB = useDeckBStore.getState();
       const mx = useMixerStore.getState();
 
+      const pos = mx.crossfaderPosition;
+      const gainA = Math.cos(pos * Math.PI / 2);
+      const gainB = Math.sin(pos * Math.PI / 2);
+
+      // Apply effective volume to YouTube players
+      const effectiveA = dA.volume * gainA * mx.masterVolume * 100;
+      const effectiveB = dB.volume * gainB * mx.masterVolume * 100;
+      dA.playerRef?.setVolume(effectiveA);
+      dB.playerRef?.setVolume(effectiveB);
+
+      // Simulate VU levels
       const baseA = dA.isPlaying ? dA.volume * 0.7 : 0;
       const baseB = dB.isPlaying ? dB.volume * 0.7 : 0;
-      const gainA = Math.cos(mx.crossfaderPosition * Math.PI / 2);
-      const gainB = Math.sin(mx.crossfaderPosition * Math.PI / 2);
-
       mx.setVuLevelA(baseA + (baseA > 0 ? Math.random() * 0.2 : 0));
       mx.setVuLevelB(baseB + (baseB > 0 ? Math.random() * 0.2 : 0));
       mx.setVuLevelMaster(
