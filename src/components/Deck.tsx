@@ -108,7 +108,7 @@ export default function Deck({ id, compact }: DeckProps) {
     <div
       className="flex flex-col gap-2.5 p-4 rounded-xl relative overflow-hidden"
       style={{
-        background: `linear-gradient(135deg, var(--bg-surface) 0%, #0f0f1a 100%)`,
+        background: 'var(--bg-surface)',
         border: `1px solid var(--border-default)`,
         boxShadow: isPlaying ? `inset 0 0 30px ${ACCENT_HEX[id]}10, 0 0 20px ${ACCENT_HEX[id]}08` : 'none',
         transition: 'box-shadow 300ms ease',

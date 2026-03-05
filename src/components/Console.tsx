@@ -163,9 +163,9 @@ export default function Console() {
               color: 'var(--text-secondary)',
               border: '1px solid var(--border-default)',
             }}
-            title={`Switch to ${theme === 'dark' ? 'Apple' : 'Dark'} skin`}
+            title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} skin`}
           >
-            {theme === 'dark' ? '☀ APPLE' : '● DARK'}
+            {theme === 'dark' ? '☀ LIGHT' : '● DARK'}
           </button>
           <MidiStatus />
         </div>
