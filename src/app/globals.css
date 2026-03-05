@@ -113,6 +113,33 @@ input[type="range"].vertical {
   direction: rtl;
 }
 
+/* ── Button polish ── */
+button {
+  transition: all 150ms ease;
+  user-select: none;
+}
+button:hover {
+  filter: brightness(1.15);
+}
+button:active {
+  transform: scale(0.96);
+}
+button:disabled {
+  pointer-events: none;
+}
+
+/* Smooth transitions on panels */
+.transition-all {
+  transition: all 200ms ease;
+}
+
+/* Focus ring for accessibility */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -6,6 +6,8 @@ import Mixer from './Mixer';
 import BPMSync from './BPMSync';
 import CueControls from './CueControls';
 import SearchPanel from './SearchPanel';
+import Playlist from './Playlist';
+import { usePlaylistStore } from '@/stores/usePlaylistStore';
 import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -82,7 +84,9 @@ export default function Console() {
           </span>
         </div>
         <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          Press <kbd className="px-1 py-0.5 rounded text-[10px]" style={{ background: 'var(--bg-elevated)' }}>S</kbd> to toggle search
+          <kbd className="px-1 py-0.5 rounded text-[10px]" style={{ background: 'var(--bg-elevated)' }}>S</kbd> search
+          <span className="mx-1">·</span>
+          <kbd className="px-1 py-0.5 rounded text-[10px]" style={{ background: 'var(--bg-elevated)' }}>P</kbd> playlist
         </div>
       </header>
 
@@ -113,8 +117,9 @@ export default function Console() {
         onCrossfaderChange={setCrossfaderPosition}
       />
 
-      {/* Search */}
+      {/* Search + Playlist */}
       <SearchPanel onLoadToDeck={handleLoadToDeck} />
+      <Playlist onLoadToDeck={handleLoadToDeck} />
     </div>
   );
 }

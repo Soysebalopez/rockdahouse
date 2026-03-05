@@ -7,6 +7,8 @@ import TransportControls from './TransportControls';
 import EQControls from './EQControls';
 import BPMDisplay from './BPMDisplay';
 import TrackInfo from './TrackInfo';
+import LoopControls from './LoopControls';
+import HotCues from './HotCues';
 import type { DeckId } from '@/lib/types';
 import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
 
@@ -33,9 +35,9 @@ export default function Deck({ id }: DeckProps) {
   const store = id === 'A' ? useDeckAStore : useDeckBStore;
   const {
     videoId, title, channel, duration, currentTime, isPlaying, volume,
-    eqLow, eqMid, eqHigh,
+    eqLow, eqMid, eqHigh, bpm, loop, hotCues,
     playerRef, setPlayerRef, setPlaying, setVolume, setEQ, setBPM,
-    setCurrentTime, setDuration,
+    setCurrentTime, setDuration, setLoop, clearLoop, setHotCue,
   } = store();
 
   const accent = ACCENTS[id];
@@ -50,21 +52,26 @@ export default function Deck({ id }: DeckProps) {
     setPlaying(state === window.YT.PlayerState.PLAYING);
   }, [setPlaying]);
 
-  // Update current time periodically
+  // Update current time + enforce loop
   useEffect(() => {
     if (isPlaying && playerRef) {
       timeUpdateRef.current = setInterval(() => {
-        setCurrentTime(playerRef.getCurrentTime?.() ?? 0);
+        const t = playerRef.getCurrentTime?.() ?? 0;
+        setCurrentTime(t);
         const d = playerRef.getDuration?.() ?? 0;
         if (d > 0) setDuration(d);
-      }, 250);
+
+        // Loop enforcement: if past loop end, seek back to loop start
+        const currentLoop = (id === 'A' ? useDeckAStore : useDeckBStore).getState().loop;
+        if (currentLoop.active && currentLoop.end > 0 && t >= currentLoop.end) {
+          playerRef.seekTo(currentLoop.start, true);
+        }
+      }, 50); // 50ms for tight loop enforcement
     } else {
       if (timeUpdateRef.current) clearInterval(timeUpdateRef.current);
     }
     return () => { if (timeUpdateRef.current) clearInterval(timeUpdateRef.current); };
-  }, [isPlaying, playerRef, setCurrentTime, setDuration]);
-
-  // Volume sync is handled by Console.tsx (applies crossfader + master)
+  }, [isPlaying, playerRef, setCurrentTime, setDuration, id]);
 
   const handlePlay = () => playerRef?.playVideo();
   const handlePause = () => playerRef?.pauseVideo();
@@ -72,6 +79,7 @@ export default function Deck({ id }: DeckProps) {
     playerRef?.pauseVideo();
     playerRef?.seekTo(0, true);
     setCurrentTime(0);
+    clearLoop();
   };
   const handleSeek = (seconds: number) => {
     playerRef?.seekTo(seconds, true);
@@ -79,19 +87,27 @@ export default function Deck({ id }: DeckProps) {
   };
 
   return (
-    <div className="flex flex-col gap-3 p-3 rounded-xl" style={{ background: 'var(--bg-surface)', border: `1px solid var(--border-default)` }}>
-      <div className="flex items-center gap-2 mb-1">
+    <div className="flex flex-col gap-2.5 p-3 rounded-xl" style={{ background: 'var(--bg-surface)', border: `1px solid var(--border-default)` }}>
+      <div className="flex items-center gap-2">
         <div className="w-3 h-3 rounded-full" style={{ background: accent }} />
         <span className="text-sm font-bold" style={{ color: accent }}>DECK {id}</span>
       </div>
 
       <YouTubePlayer deckId={id} videoId={videoId} onReady={handleReady} onStateChange={handleStateChange} />
 
-      <Waveform videoId={videoId} currentTime={currentTime} duration={duration} accentColor={ACCENT_HEX[id]} dimColor={DIM_HEX[id]} />
+      <Waveform
+        videoId={videoId}
+        currentTime={currentTime}
+        duration={duration}
+        accentColor={ACCENT_HEX[id]}
+        dimColor={DIM_HEX[id]}
+        loop={loop.active ? { start: loop.start, end: loop.end } : undefined}
+        hotCues={hotCues}
+      />
 
       <TrackInfo title={title} channel={channel} currentTime={currentTime} duration={duration} onSeek={handleSeek} accentColor={accent} />
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <TransportControls isPlaying={isPlaying} onPlay={handlePlay} onPause={handlePause} onStop={handleStop} accentColor={accent} />
         <EQControls
           eqHigh={eqHigh}
@@ -103,6 +119,23 @@ export default function Deck({ id }: DeckProps) {
           accentColor={accent}
         />
         <BPMDisplay trackTitle={title} onBpmChange={setBPM} accentColor={accent} />
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <LoopControls
+          bpm={bpm}
+          currentTime={currentTime}
+          loop={loop}
+          onSetLoop={setLoop}
+          onClearLoop={clearLoop}
+          accentColor={accent}
+        />
+        <HotCues
+          hotCues={hotCues}
+          currentTime={currentTime}
+          onSetHotCue={setHotCue}
+          onSeek={handleSeek}
+        />
       </div>
     </div>
   );

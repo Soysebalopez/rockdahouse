@@ -1,6 +1,7 @@
 'use client';
 
 import type { Track, DeckId } from '@/lib/types';
+import { usePlaylistStore } from '@/stores/usePlaylistStore';
 
 interface SearchResultProps {
   track: Track;
@@ -8,6 +9,8 @@ interface SearchResultProps {
 }
 
 export default function SearchResult({ track, onLoadToDeck }: SearchResultProps) {
+  const addTrack = usePlaylistStore((s) => s.addTrack);
+
   return (
     <div
       className="flex items-center gap-3 px-2 py-1.5 rounded-lg transition-colors"
@@ -26,6 +29,14 @@ export default function SearchResult({ track, onLoadToDeck }: SearchResultProps)
         <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{track.channel}</div>
       </div>
       <div className="flex gap-1.5 shrink-0">
+        <button
+          onClick={() => addTrack(track)}
+          className="px-2 py-1 rounded text-xs font-bold transition-colors"
+          style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+          title="Add to playlist"
+        >
+          +
+        </button>
         <button
           onClick={() => onLoadToDeck(track.videoId, track.title, track.channel, track.thumbnail, 'A')}
           className="px-2 py-1 rounded text-xs font-bold transition-colors"

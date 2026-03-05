@@ -1,6 +1,19 @@
 import { create } from 'zustand';
 import type { DeckId, Track } from '@/lib/types';
 
+export interface HotCue {
+  time: number;
+  label: string;
+  color: string;
+}
+
+interface LoopState {
+  active: boolean;
+  start: number;
+  end: number;
+  beats: number | null; // 4, 8, 16 or null for manual
+}
+
 interface DeckState {
   videoId: string | null;
   title: string;
@@ -14,6 +27,10 @@ interface DeckState {
   eqHigh: number;
   bpm: number | null;
   playerRef: YT.Player | null;
+  // Loop
+  loop: LoopState;
+  // Hot cues
+  hotCues: (HotCue | null)[];
 }
 
 interface DeckActions {
@@ -25,7 +42,14 @@ interface DeckActions {
   setBPM: (bpm: number | null) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
+  // Loop
+  setLoop: (loop: LoopState) => void;
+  clearLoop: () => void;
+  // Hot cues
+  setHotCue: (index: number, cue: HotCue | null) => void;
 }
+
+const defaultLoop: LoopState = { active: false, start: 0, end: 0, beats: null };
 
 const defaultDeckState: DeckState = {
   videoId: null,
@@ -40,6 +64,8 @@ const defaultDeckState: DeckState = {
   eqHigh: 0,
   bpm: null,
   playerRef: null,
+  loop: { ...defaultLoop },
+  hotCues: [null, null, null],
 };
 
 function createDeckStore() {
@@ -51,6 +77,8 @@ function createDeckStore() {
       channel: track.channel,
       isPlaying: false,
       currentTime: 0,
+      loop: { ...defaultLoop },
+      hotCues: [null, null, null],
     }),
     setPlayerRef: (player) => set({ playerRef: player }),
     setPlaying: (playing) => set({ isPlaying: playing }),
@@ -65,6 +93,13 @@ function createDeckStore() {
     setBPM: (bpm) => set({ bpm }),
     setCurrentTime: (time) => set({ currentTime: time }),
     setDuration: (duration) => set({ duration }),
+    setLoop: (loop) => set({ loop }),
+    clearLoop: () => set({ loop: { ...defaultLoop } }),
+    setHotCue: (index, cue) => set((s) => {
+      const hotCues = [...s.hotCues];
+      hotCues[index] = cue;
+      return { hotCues };
+    }),
   }));
 }
 

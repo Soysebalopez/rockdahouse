@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
 import { useSearchStore } from '@/stores/useSearchStore';
+import { usePlaylistStore } from '@/stores/usePlaylistStore';
 
 export function useKeyboardShortcuts() {
   useEffect(() => {
@@ -43,6 +44,10 @@ export function useKeyboardShortcuts() {
         case 's':
         case 'S':
           useSearchStore.getState().toggleOpen();
+          break;
+        case 'p':
+        case 'P':
+          usePlaylistStore.getState().toggleOpen();
           break;
         // EQ kills — Deck A
         case 'q': case 'Q':
