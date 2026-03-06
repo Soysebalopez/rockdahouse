@@ -18,9 +18,6 @@ export interface DeckState {
   currentTime: number;
   isPlaying: boolean;
   volume: number;
-  eqLow: number;
-  eqMid: number;
-  eqHigh: number;
   bpm: number | null;
   playerRef: YT.Player | null;
 }

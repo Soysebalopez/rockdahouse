@@ -2,15 +2,15 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type MidiAction =
-  | 'deckA.play' | 'deckA.cue' | 'deckA.volume' | 'deckA.eqHigh' | 'deckA.eqMid' | 'deckA.eqLow'
+  | 'deckA.play' | 'deckA.cue' | 'deckA.volume'
   | 'deckA.loop4' | 'deckA.loop8' | 'deckA.loop16' | 'deckA.hotcue1' | 'deckA.hotcue2' | 'deckA.hotcue3'
   | 'deckA.fxBrake' | 'deckA.fxSpin' | 'deckA.fxRepeat' | 'deckA.fxEcho' | 'deckA.fxFilter'
-  | 'deckB.play' | 'deckB.cue' | 'deckB.volume' | 'deckB.eqHigh' | 'deckB.eqMid' | 'deckB.eqLow'
+  | 'deckB.play' | 'deckB.cue' | 'deckB.volume'
   | 'deckB.loop4' | 'deckB.loop8' | 'deckB.loop16' | 'deckB.hotcue1' | 'deckB.hotcue2' | 'deckB.hotcue3'
   | 'deckB.fxBrake' | 'deckB.fxSpin' | 'deckB.fxRepeat' | 'deckB.fxEcho' | 'deckB.fxFilter'
-  | 'deckC.play' | 'deckC.cue' | 'deckC.volume' | 'deckC.eqHigh' | 'deckC.eqMid' | 'deckC.eqLow'
+  | 'deckC.play' | 'deckC.cue' | 'deckC.volume'
   | 'deckC.fxBrake' | 'deckC.fxSpin' | 'deckC.fxRepeat' | 'deckC.fxEcho' | 'deckC.fxFilter'
-  | 'deckD.play' | 'deckD.cue' | 'deckD.volume' | 'deckD.eqHigh' | 'deckD.eqMid' | 'deckD.eqLow'
+  | 'deckD.play' | 'deckD.cue' | 'deckD.volume'
   | 'deckD.fxBrake' | 'deckD.fxSpin' | 'deckD.fxRepeat' | 'deckD.fxEcho' | 'deckD.fxFilter'
   | 'sampler.pad1' | 'sampler.pad2' | 'sampler.pad3' | 'sampler.pad4'
   | 'sampler.pad5' | 'sampler.pad6' | 'sampler.pad7' | 'sampler.pad8'

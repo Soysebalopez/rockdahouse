@@ -49,26 +49,6 @@ export function useKeyboardShortcuts() {
         case 'P':
           usePlaylistStore.getState().toggleOpen();
           break;
-        // EQ kills — Deck A
-        case 'q': case 'Q':
-          deckA.setEQ('high', deckA.eqHigh === -12 ? 0 : -12);
-          break;
-        case 'a':
-          deckA.setEQ('mid', deckA.eqMid === -12 ? 0 : -12);
-          break;
-        case 'z': case 'Z':
-          deckA.setEQ('low', deckA.eqLow === -12 ? 0 : -12);
-          break;
-        // EQ kills — Deck B
-        case 'e': case 'E':
-          deckB.setEQ('high', deckB.eqHigh === -12 ? 0 : -12);
-          break;
-        case 'd':
-          deckB.setEQ('mid', deckB.eqMid === -12 ? 0 : -12);
-          break;
-        case 'c': case 'C':
-          deckB.setEQ('low', deckB.eqLow === -12 ? 0 : -12);
-          break;
       }
     };
 

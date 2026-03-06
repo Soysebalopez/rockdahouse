@@ -5,13 +5,11 @@ import YouTubePlayer from './YouTubePlayer';
 import Waveform from './Waveform';
 import JogWheel from './JogWheel';
 import TransportControls from './TransportControls';
-import EQControls from './EQControls';
 import BPMDisplay from './BPMDisplay';
 import TrackInfo from './TrackInfo';
 import LoopControls from './LoopControls';
 import HotCues from './HotCues';
 import FXControls from './FXControls';
-import EQPanel from './EQPanel';
 import type { DeckId } from '@/lib/types';
 import { getDeckStoreById } from '@/stores/useDeckStore';
 
@@ -45,8 +43,8 @@ export default function Deck({ id, compact }: DeckProps) {
   const store = getDeckStoreById(id);
   const {
     videoId, title, channel, duration, currentTime, isPlaying, volume,
-    eqLow, eqMid, eqHigh, eqBands, eqPanelOpen, bpm, loop, hotCues,
-    playerRef, setPlayerRef, setPlaying, setVolume, setEQ, setEQBand, resetEQBands, toggleEQPanel, setBPM,
+    bpm, loop, hotCues,
+    playerRef, setPlayerRef, setPlaying, setVolume, setBPM,
     setCurrentTime, setDuration, setLoop, clearLoop, setHotCue,
   } = store();
 
@@ -162,41 +160,8 @@ export default function Deck({ id, compact }: DeckProps) {
       <div className="flex items-center gap-3 flex-wrap">
         <TransportControls isPlaying={isPlaying} onPlay={handlePlay} onPause={handlePause} onStop={handleStop} accentColor={accent} />
         <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
-        <EQControls
-          eqHigh={eqHigh}
-          eqMid={eqMid}
-          eqLow={eqLow}
-          onChangeHigh={(v) => setEQ('high', v)}
-          onChangeMid={(v) => setEQ('mid', v)}
-          onChangeLow={(v) => setEQ('low', v)}
-          accentColor={accent}
-        />
-        <button
-          onClick={toggleEQPanel}
-          className="px-1.5 py-1 rounded text-[9px] font-bold tracking-wider"
-          style={{
-            background: eqPanelOpen ? accent : 'var(--bg-elevated)',
-            color: eqPanelOpen ? '#fff' : 'var(--text-muted)',
-            border: `1px solid ${eqPanelOpen ? 'transparent' : 'var(--border-default)'}`,
-          }}
-          title="Toggle 8-band EQ"
-        >
-          8EQ
-        </button>
-        <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
         <BPMDisplay trackTitle={title} onBpmChange={setBPM} accentColor={accent} />
       </div>
-
-      {/* 8-Band EQ Panel */}
-      {eqPanelOpen && (
-        <EQPanel
-          bands={eqBands}
-          onBandChange={setEQBand}
-          onReset={resetEQBands}
-          accentColor={accent}
-          accentHex={ACCENT_HEX[id]}
-        />
-      )}
 
       {/* Loop + Hot Cues row */}
       <div className="flex items-center gap-3 flex-wrap pt-1" style={{ borderTop: '1px solid var(--border-subtle)' }}>

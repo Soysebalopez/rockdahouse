@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Browser-based DJ mixing console that uses YouTube as the audio source. Two decks with crossfader, EQ, BPM sync, waveforms, loops, hot cues, and YouTube search — all client-side.
+Browser-based DJ mixing console that uses YouTube as the audio source. Two decks with crossfader, BPM sync, waveforms, loops, hot cues, and YouTube search — all client-side.
 
 **Tagline:** "Every song on YouTube. Your browser is the DJ booth."
 
@@ -28,13 +28,12 @@ src/
 │   └── api/bpm/route.ts      # Spotify BPM lookup (server-side, caches token)
 ├── components/
 │   ├── Console.tsx           # Main layout: header + decks + sync + mixer + search + playlist
-│   ├── Deck.tsx              # Full deck: player + waveform + controls + EQ + BPM + loops + cues
+│   ├── Deck.tsx              # Full deck: player + waveform + controls + BPM + loops + cues
 │   ├── YouTubePlayer.tsx     # YouTube IFrame embed wrapper
 │   ├── Waveform.tsx          # Canvas waveform with loop region + hot cue markers
 │   ├── Mixer.tsx             # Crossfader + channel faders + VU + master
 │   ├── Crossfader.tsx        # Horizontal slider with equal power curve
 │   ├── Fader.tsx             # Reusable vertical/horizontal slider
-│   ├── EQControls.tsx        # 3-band EQ (visual only — no Web Audio due to CORS)
 │   ├── VUMeter.tsx           # Canvas-based animated level meter (simulated)
 │   ├── TransportControls.tsx # Play/Pause/Stop
 │   ├── BPMDisplay.tsx        # Auto BPM (Spotify) + TAP tempo, source indicator
@@ -88,8 +87,6 @@ src/
 | ↑ / ↓ | Master volume |
 | S | Toggle search panel |
 | P | Toggle playlist |
-| Q/A/Z | EQ kill Hi/Mid/Lo Deck A |
-| E/D/C | EQ kill Hi/Mid/Lo Deck B |
 
 ## Environment Variables
 
@@ -109,7 +106,7 @@ npm run lint   # ESLint
 
 ### MVP (P0+P1)
 - [x] Dual YouTube decks, crossfader, volume faders, master
-- [x] EQ 3-band visual, BPM tap tempo, VU meters, search, keyboard shortcuts
+- [x] BPM tap tempo, VU meters, search, keyboard shortcuts
 - [x] Dark theme, responsive layout, Vercel deploy
 
 ### P2
@@ -124,7 +121,7 @@ npm run lint   # ESLint
 
 ### P3
 - [x] Canvas jog wheels (spinning vinyl + scratch drag)
-- [x] SVG rotary knobs for EQ controls
+- [x] SVG rotary knobs
 - [x] Gradient backgrounds, glow on playing decks
 - [x] LIVE badge animation
 
@@ -152,10 +149,18 @@ npm run lint   # ESLint
 - [x] Anti-flash script in layout.tsx (reads theme before paint)
 - [x] Canvas-based rainbow bar equalizer in footer (32 bars, rAF loop)
 
+## Removed Features
+
+### EQ (removed — not functional)
+- 3-band EQ knobs (HI/MD/LO) and 8-band EQ panel were removed because they were **visual-only** — YouTube IFrame embeds don't expose the audio stream (CORS), so BiquadFilterNodes can't process the audio.
+- Attempted a Web Audio pipeline (server-side audio extraction via ytdl-core → audio proxy → HTMLAudioElement → Web Audio graph), but YouTube blocks datacenter IPs and ytdl-core is archived. InnerTube API also requires poToken auth now.
+- **Future alternative:** If a reliable way to extract/proxy YouTube audio is found (e.g. yt-dlp on a dedicated server, or a third-party API), the EQ can be re-implemented with real BiquadFilterNodes. The Knob component still exists (used by Sampler).
+
 ## Future Phases
 
 - P4: User auth (Supabase), cloud playlists, share sets by URL
 - P8: Recording, set export
+- Real EQ: needs a reliable audio extraction method (see "Removed Features" above)
 
 ## Monetization Analysis (YouTube API costs)
 

@@ -57,15 +57,6 @@ function executeAction(action: MidiAction, value: number) {
     case 'volume':
       state.setVolume(value / 127);
       break;
-    case 'eqHigh':
-      state.setEQ('high', (value / 127) * 24 - 12); // Map 0-127 to -12..+12
-      break;
-    case 'eqMid':
-      state.setEQ('mid', (value / 127) * 24 - 12);
-      break;
-    case 'eqLow':
-      state.setEQ('low', (value / 127) * 24 - 12);
-      break;
     case 'hotcue1':
       if (value > 0) triggerHotCue(store, 0);
       break;
