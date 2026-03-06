@@ -3,7 +3,6 @@
 import { useEffect, useRef } from 'react';
 import { useDeckAStore, useDeckBStore, useDeckCStore, useDeckDStore } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
-import { getMasterFFTData } from '@/hooks/useAudioEngine';
 
 const BAR_COUNT = 32;
 const BAR_GAP = 2;
@@ -47,24 +46,12 @@ export default function Equalizer() {
       const deckMode = useMixerStore.getState().deckMode;
       const activeStores = deckMode === 4 ? stores : stores.slice(0, 2);
       const anyPlaying = activeStores.some((s) => s.getState().isPlaying);
-
-      // Try real FFT data from master analyser
-      const fftData = getMasterFFTData();
-      const anyAudioEngine = activeStores.some((s) => s.getState().audioEngineActive);
-      const useRealFFT = fftData && anyAudioEngine && anyPlaying;
+      const boost = anyPlaying ? 0.85 : 0.15;
 
       // Update levels with smoothing
       const levels = levelsRef.current;
       for (let i = 0; i < BAR_COUNT; i++) {
-        let target: number;
-        if (useRealFFT) {
-          // Map BAR_COUNT bars to FFT bins (fftData has frequencyBinCount entries, 0-255 each)
-          const binIndex = Math.floor((i / BAR_COUNT) * fftData.length);
-          target = fftData[binIndex] / 255;
-        } else {
-          const boost = anyPlaying ? 0.85 : 0.15;
-          target = Math.random() * boost;
-        }
+        const target = Math.random() * boost;
         levels[i] += (target - levels[i]) * SMOOTHING;
       }
 

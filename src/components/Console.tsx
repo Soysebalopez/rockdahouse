@@ -16,10 +16,6 @@ import { useMidi } from '@/hooks/useMidi';
 import { useDeckAStore, useDeckBStore, useDeckCStore, useDeckDStore, getDeckStoreById } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import {
-  updateDeckVolume, updateMasterVolume, updateCrossfader, updateDeckCrossfaderSide,
-  getAnalyserLevel, getMasterLevel, getDeckGraph,
-} from '@/hooks/useAudioEngine';
 import type { DeckId } from '@/lib/types';
 
 const ALL_DECKS: DeckId[] = ['A', 'B', 'C', 'D'];
@@ -66,7 +62,7 @@ export default function Console() {
 
   const vuAnimRef = useRef<number>(undefined);
 
-  // Main animation loop: applies volume + reads real or simulated VU meters
+  // Main animation loop: applies volume to YouTube players + simulates VU meters
   useEffect(() => {
     const tick = () => {
       const mx = useMixerStore.getState();
@@ -75,51 +71,26 @@ export default function Console() {
       const gainSideB = Math.sin(pos * Math.PI / 2);
 
       const activeDecks = mx.deckMode === 4 ? ALL_DECKS : (['A', 'B'] as DeckId[]);
-      let anyAudioEngine = false;
       let maxLevel = 0;
-
-      // Update crossfader on the Web Audio side
-      updateCrossfader(pos);
-      updateMasterVolume(mx.masterVolume);
 
       for (const deckId of activeDecks) {
         const d = DECK_STORES[deckId].getState();
         const side = mx.crossfaderAssign[deckId];
         const gain = side === 'A' ? gainSideA : gainSideB;
-        const graph = getDeckGraph(deckId);
 
-        if (graph && d.audioEngineActive) {
-          // Real audio engine: control GainNode, keep YouTube muted
-          anyAudioEngine = true;
-          updateDeckVolume(deckId, d.volume);
-          updateDeckCrossfaderSide(deckId, side);
-          d.playerRef?.setVolume(0); // Keep YouTube muted
+        // Apply effective volume to YouTube player
+        const effective = d.volume * gain * mx.masterVolume * 100;
+        d.playerRef?.setVolume(effective);
 
-          // Real VU from AnalyserNode
-          const level = getAnalyserLevel(deckId);
-          mx.setVuLevel(deckId, level * 3); // Scale up for visual impact
-          maxLevel = Math.max(maxLevel, level);
-        } else {
-          // Fallback: YouTube-only mode
-          const effective = d.volume * gain * mx.masterVolume * 100;
-          d.playerRef?.setVolume(effective);
+        // Simulate VU level
+        const base = d.isPlaying ? d.volume * 0.7 : 0;
+        const vu = base + (base > 0 ? Math.random() * 0.2 : 0);
+        mx.setVuLevel(deckId, vu);
 
-          // Simulated VU level
-          const base = d.isPlaying ? d.volume * 0.7 : 0;
-          const vu = base + (base > 0 ? Math.random() * 0.2 : 0);
-          mx.setVuLevel(deckId, vu);
-          maxLevel = Math.max(maxLevel, base * gain);
-        }
+        maxLevel = Math.max(maxLevel, base * gain);
       }
 
-      // Master VU
-      if (anyAudioEngine) {
-        const masterLevel = getMasterLevel();
-        mx.setVuLevelMaster(masterLevel * 3);
-      } else {
-        mx.setVuLevelMaster(maxLevel * mx.masterVolume + (maxLevel > 0 ? Math.random() * 0.1 : 0));
-      }
-
+      mx.setVuLevelMaster(maxLevel * mx.masterVolume + (maxLevel > 0 ? Math.random() * 0.1 : 0));
       vuAnimRef.current = requestAnimationFrame(tick);
     };
     vuAnimRef.current = requestAnimationFrame(tick);

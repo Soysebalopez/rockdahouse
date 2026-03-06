@@ -1,10 +1,6 @@
 import { create } from 'zustand';
 import type { DeckId } from '@/lib/types';
 import { getDeckStoreById } from './useDeckStore';
-import {
-  getDeckGraph, rampDeckGainTo, setDeckGainImmediate,
-  setFilterSweepFrequency, resetFilterSweep,
-} from '@/hooks/useAudioEngine';
 
 export type EffectType = 'brake' | 'spinback' | 'beatRepeat' | 'echoOut' | 'filterSweep';
 
@@ -52,19 +48,9 @@ export const useEffectsStore = create<EffectsState & EffectsActions>((set, get) 
 
   stopEffect: (deckId) => {
     clearEffectTimer(deckId);
+    // Restore playback rate to 1
     const player = getDeckStoreById(deckId).getState().playerRef;
     player?.setPlaybackRate(1);
-
-    // Reset audio engine state
-    const graph = getDeckGraph(deckId);
-    if (graph) {
-      graph.audio.playbackRate = 1;
-      resetFilterSweep(deckId);
-      // Restore deck gain to current volume
-      const vol = getDeckStoreById(deckId).getState().volume;
-      setDeckGainImmediate(deckId, vol);
-    }
-
     set((s) => ({
       decks: { ...s.decks, [deckId]: { active: null, progress: 0 } },
     }));
@@ -124,22 +110,12 @@ function runBrake(deckId: DeckId, player: YT.Player, set: SetFn, get: GetFn) {
     const progress = step / steps;
     const rate = Math.max(0.25, startRate * (1 - progress * 0.75));
     player.setPlaybackRate(rate);
-
-    // Also slow the audio element
-    const graph = getDeckGraph(deckId);
-    if (graph) graph.audio.playbackRate = rate;
-
     get().setProgress(deckId, progress);
 
     if (step >= steps) {
       clearEffectTimer(deckId);
       player.pauseVideo();
       player.setPlaybackRate(1);
-      const g = getDeckGraph(deckId);
-      if (g) {
-        g.audio.pause();
-        g.audio.playbackRate = 1;
-      }
       set((s) => ({
         decks: { ...s.decks, [deckId]: { active: null, progress: 0 } },
       }));
@@ -160,19 +136,12 @@ function runSpinback(deckId: DeckId, player: YT.Player, set: SetFn, get: GetFn) 
     const seekBack = progress * progress * 4; // quadratic curve, up to 4 seconds back
     const newTime = Math.max(0, startTime - seekBack);
     player.seekTo(newTime, true);
-
-    // Sync audio element
-    const graph = getDeckGraph(deckId);
-    if (graph) graph.audio.currentTime = newTime;
-
     get().setProgress(deckId, progress);
 
     if (step >= steps) {
       clearEffectTimer(deckId);
       player.pauseVideo();
       player.setPlaybackRate(1);
-      const g = getDeckGraph(deckId);
-      if (g) g.audio.pause();
       set((s) => ({
         decks: { ...s.decks, [deckId]: { active: null, progress: 0 } },
       }));
@@ -197,9 +166,6 @@ function runBeatRepeat(deckId: DeckId, player: YT.Player, set: SetFn, get: GetFn
     const sliceDuration = beatDuration / (division / 4);
 
     player.seekTo(anchorTime, true);
-    const graph = getDeckGraph(deckId);
-    if (graph) graph.audio.currentTime = anchorTime;
-
     get().setProgress(deckId, step / totalSteps);
     step++;
 
@@ -210,102 +176,49 @@ function runBeatRepeat(deckId: DeckId, player: YT.Player, set: SetFn, get: GetFn
 }
 
 function runEchoOut(deckId: DeckId, player: YT.Player, set: SetFn, get: GetFn) {
-  const graph = getDeckGraph(deckId);
+  const startVolume = player.getVolume?.() ?? 100;
+  const steps = 25;
+  const intervalMs = 80; // ~2s total
+  let step = 0;
 
-  if (graph) {
-    // Real audio: smooth gain ramp to 0 over 2 seconds
-    const vol = getDeckStoreById(deckId).getState().volume;
-    rampDeckGainTo(deckId, 0, 2.0);
+  effectTimers[deckId] = setInterval(() => {
+    step++;
+    const progress = step / steps;
+    const vol = Math.max(0, startVolume * (1 - progress));
+    player.setVolume(vol);
+    get().setProgress(deckId, progress);
 
-    const steps = 25;
-    const intervalMs = 80;
-    let step = 0;
-
-    effectTimers[deckId] = setInterval(() => {
-      step++;
-      const progress = step / steps;
-      get().setProgress(deckId, progress);
-
-      if (step >= steps) {
-        clearEffectTimer(deckId);
-        player.pauseVideo();
-        graph.audio.pause();
-        // Restore gain for next play
-        setDeckGainImmediate(deckId, vol);
-        set((s) => ({
-          decks: { ...s.decks, [deckId]: { active: null, progress: 0 } },
-        }));
-      }
-    }, intervalMs);
-  } else {
-    // Fallback: YouTube volume fade
-    const startVolume = player.getVolume?.() ?? 100;
-    const steps = 25;
-    const intervalMs = 80;
-    let step = 0;
-
-    effectTimers[deckId] = setInterval(() => {
-      step++;
-      const progress = step / steps;
-      const vol = Math.max(0, startVolume * (1 - progress));
-      player.setVolume(vol);
-      get().setProgress(deckId, progress);
-
-      if (step >= steps) {
-        clearEffectTimer(deckId);
-        player.pauseVideo();
-        set((s) => ({
-          decks: { ...s.decks, [deckId]: { active: null, progress: 0 } },
-        }));
-      }
-    }, intervalMs);
-  }
+    if (step >= steps) {
+      clearEffectTimer(deckId);
+      player.pauseVideo();
+      // Volume will be restored by Console.tsx rAF loop when playing resumes
+      set((s) => ({
+        decks: { ...s.decks, [deckId]: { active: null, progress: 0 } },
+      }));
+    }
+  }, intervalMs);
 }
 
 function runFilterSweep(deckId: DeckId, player: YT.Player, set: SetFn, get: GetFn) {
-  const graph = getDeckGraph(deckId);
+  // Visual-only with slight volume ducking to simulate filter
+  const startVolume = player.getVolume?.() ?? 100;
   const steps = 40;
   const intervalMs = 50; // ~2s sweep
   let step = 0;
   let direction = 1; // 1 = sweeping in, -1 = sweeping out
 
-  if (graph) {
-    // Real filter sweep: lowpass 20kHz → 200Hz → 20kHz
-    effectTimers[deckId] = setInterval(() => {
-      if (get().decks[deckId].active !== 'filterSweep') return;
+  effectTimers[deckId] = setInterval(() => {
+    if (get().decks[deckId].active !== 'filterSweep') return;
 
-      step += direction;
-      const progress = step / steps;
+    step += direction;
+    const progress = step / steps;
 
-      // Logarithmic frequency sweep: 20000 → 200 → 20000
-      const minFreq = 200;
-      const maxFreq = 20000;
-      const sweepAmount = Math.sin(progress * Math.PI); // 0→1→0
-      const freq = maxFreq * Math.pow(minFreq / maxFreq, sweepAmount);
-      setFilterSweepFrequency(deckId, freq);
+    // Slight volume ducking at midpoint of sweep
+    const duck = 1 - Math.sin(progress * Math.PI) * 0.15;
+    player.setVolume(startVolume * duck);
+    get().setProgress(deckId, Math.abs(progress));
 
-      get().setProgress(deckId, Math.abs(progress));
-
-      if (step >= steps) direction = -1;
-      if (step <= 0) direction = 1;
-    }, intervalMs);
-  } else {
-    // Fallback: visual-only with slight volume ducking
-    const startVolume = player.getVolume?.() ?? 100;
-
-    effectTimers[deckId] = setInterval(() => {
-      if (get().decks[deckId].active !== 'filterSweep') return;
-
-      step += direction;
-      const progress = step / steps;
-
-      // Slight volume ducking at midpoint of sweep
-      const duck = 1 - Math.sin(progress * Math.PI) * 0.15;
-      player.setVolume(startVolume * duck);
-      get().setProgress(deckId, Math.abs(progress));
-
-      if (step >= steps) direction = -1;
-      if (step <= 0) direction = 1;
-    }, intervalMs);
-  }
+    if (step >= steps) direction = -1;
+    if (step <= 0) direction = 1;
+  }, intervalMs);
 }

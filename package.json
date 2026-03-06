@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/download-ytdlp.mjs && next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "node scripts/download-ytdlp.mjs"
+    "lint": "next lint"
   },
   "dependencies": {
     "next": "^15.1.0",

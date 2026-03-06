@@ -33,10 +33,6 @@ interface DeckState {
   eqPanelOpen: boolean;
   bpm: number | null;
   playerRef: YT.Player | null;
-  // Audio engine state
-  audioEngineActive: boolean;
-  audioStreamUrl: string | null;
-  audioError: string | null;
   // Loop
   loop: LoopState;
   // Hot cues
@@ -55,11 +51,6 @@ interface DeckActions {
   setBPM: (bpm: number | null) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
-  // Audio engine
-  setAudioEngineActive: (active: boolean) => void;
-  setAudioStreamUrl: (url: string | null) => void;
-  setAudioError: (error: string | null) => void;
-  fetchAudioStream: (videoId: string) => void;
   // Loop
   setLoop: (loop: LoopState) => void;
   clearLoop: () => void;
@@ -86,9 +77,6 @@ const defaultDeckState: DeckState = {
   eqPanelOpen: false,
   bpm: null,
   playerRef: null,
-  audioEngineActive: false,
-  audioStreamUrl: null,
-  audioError: null,
   loop: { ...defaultLoop },
   hotCues: [null, null, null],
 };
@@ -96,20 +84,15 @@ const defaultDeckState: DeckState = {
 function createDeckStore() {
   return create<DeckState & DeckActions>((set) => ({
     ...defaultDeckState,
-    loadTrack: (track) => {
-      set({
-        videoId: track.videoId,
-        title: track.title,
-        channel: track.channel,
-        isPlaying: false,
-        currentTime: 0,
-        loop: { ...defaultLoop },
-        hotCues: [null, null, null],
-        audioEngineActive: false,
-        audioStreamUrl: null,
-        audioError: null,
-      });
-    },
+    loadTrack: (track) => set({
+      videoId: track.videoId,
+      title: track.title,
+      channel: track.channel,
+      isPlaying: false,
+      currentTime: 0,
+      loop: { ...defaultLoop },
+      hotCues: [null, null, null],
+    }),
     setPlayerRef: (player) => set({ playerRef: player }),
     setPlaying: (playing) => set({ isPlaying: playing }),
     setVolume: (volume) => set({ volume }),
@@ -127,26 +110,6 @@ function createDeckStore() {
     }),
     resetEQBands: () => set({ eqBands: [...defaultEQBands] }),
     toggleEQPanel: () => set((s) => ({ eqPanelOpen: !s.eqPanelOpen })),
-    setAudioEngineActive: (active) => set({ audioEngineActive: active }),
-    setAudioStreamUrl: (url) => set({ audioStreamUrl: url }),
-    setAudioError: (error) => set({ audioError: error }),
-    fetchAudioStream: (videoId) => {
-      fetch(`/api/stream?videoId=${videoId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error('Stream fetch failed');
-          return res.json();
-        })
-        .then((data) => {
-          if (data.url) {
-            set({ audioStreamUrl: `/api/audio-proxy?videoId=${videoId}` });
-          } else {
-            set({ audioError: 'No audio URL', audioStreamUrl: null });
-          }
-        })
-        .catch((err) => {
-          set({ audioError: err.message, audioStreamUrl: null });
-        });
-    },
     setBPM: (bpm) => set({ bpm }),
     setCurrentTime: (time) => set({ currentTime: time }),
     setDuration: (duration) => set({ duration }),

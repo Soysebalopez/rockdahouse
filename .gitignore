@@ -18,9 +18,6 @@
 # production
 /build
 
-# yt-dlp binary (downloaded at build time)
-/bin/
-
 # misc
 .DS_Store
 *.pem
