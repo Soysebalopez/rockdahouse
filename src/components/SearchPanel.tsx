@@ -59,11 +59,23 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
         for (const track of tracks) {
           if (bpmData[track.title] !== undefined) {
             updateTrackMeta(track.videoId, { bpm: bpmData[track.title].bpm });
+          } else {
+            // Mark as null so badge shows "N/A" instead of loading forever
+            updateTrackMeta(track.videoId, { bpm: null });
           }
+        }
+      } else {
+        // BPM batch failed entirely — mark all tracks as null
+        for (const track of tracks) {
+          updateTrackMeta(track.videoId, { bpm: null });
         }
       }
     } catch (err) {
       console.warn('[SearchPanel] metadata fetch failed:', err);
+      // Mark all tracks as bpm: null so loading state ends
+      for (const track of tracks) {
+        updateTrackMeta(track.videoId, { bpm: null });
+      }
     } finally {
       setLoadingMeta(false);
     }

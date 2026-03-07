@@ -9,7 +9,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing titles array' }, { status: 400 });
     }
 
-    const token = await getSpotifyToken();
+    let token: string;
+    try {
+      token = await getSpotifyToken();
+    } catch {
+      // Spotify credentials not configured — return empty results gracefully
+      const empty: Record<string, { bpm: null }> = {};
+      for (const t of titles.slice(0, 15)) {
+        empty[t] = { bpm: null };
+      }
+      return NextResponse.json({ results: empty, warning: 'Spotify credentials not configured' });
+    }
     const results: Record<string, { bpm: number | null }> = {};
 
     // Process titles in parallel (max 15 at a time to avoid rate limits)

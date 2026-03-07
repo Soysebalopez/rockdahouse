@@ -29,8 +29,8 @@ src/
 │   ├── api/bpm-batch/route.ts # Batch BPM lookup for search results (Spotify)
 │   └── api/video-details/route.ts # Batch video quality lookup (YouTube videos.list)
 ├── components/
-│   ├── Console.tsx           # Main layout: header + decks + sync + mixer + search + playlist
-│   ├── Deck.tsx              # Full deck: player + waveform + controls + BPM + loops + cues
+│   ├── Console.tsx           # Main layout: [Deck A] [Center: waveform+sync+mixer] [Deck B] + search + playlist
+│   ├── Deck.tsx              # Full deck: player + waveform + controls + BPM + loops/cues/FX (single row)
 │   ├── YouTubePlayer.tsx     # YouTube IFrame embed wrapper
 │   ├── Waveform.tsx          # Canvas waveform with loop region + hot cue markers
 │   ├── DualWaveform.tsx      # Mirrored dual waveform overlay (A top, B bottom) with beat grid
@@ -178,6 +178,12 @@ npm run lint   # ESLint
 - [x] BPM/quality badges always visible in search: loading shimmer, "N/A" fallback
 - [x] Compact deck layout: smaller YouTube player (120px max), smaller jog wheel (90px), tighter gaps
 - [x] Compact console layout: reduced padding/gaps so search panel visible without scrolling
+- [x] FX + Loop + HotCues merged into single row per deck (shorter decks)
+- [x] Horizontal DJ layout: `[Deck A] [Center Controls] [Deck B]` 3-column grid on desktop
+- [x] Center column: DualWaveform + BPMSync + CueControls + Mixer stacked vertically
+- [x] 4-deck mode: A/B with center controls top row, C/D on second row
+- [x] BPM batch API graceful fallback when Spotify credentials missing (returns null instead of 500)
+- [x] BPM badges properly resolve to "N/A" when metadata fetch fails (no infinite loading)
 
 ## Removed Features
 

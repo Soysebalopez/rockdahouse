@@ -224,7 +224,7 @@ export default function Deck({ id, compact }: DeckProps) {
         />
       </div>
 
-      {/* Loop + Hot Cues row */}
+      {/* Loop + Hot Cues + FX row */}
       <div className="flex items-center gap-3 flex-wrap pt-1" style={{ borderTop: '1px solid var(--border-subtle)' }}>
         <LoopControls
           bpm={bpm}
@@ -241,10 +241,7 @@ export default function Deck({ id, compact }: DeckProps) {
           onSetHotCue={setHotCue}
           onSeek={handleSeek}
         />
-      </div>
-
-      {/* FX row */}
-      <div className="flex items-center gap-3 flex-wrap pt-1" style={{ borderTop: '1px solid var(--border-subtle)' }}>
+        <div className="w-px h-6" style={{ background: 'var(--border-default)' }} />
         <FXControls deckId={id} accentColor={ACCENT_HEX[id]} />
       </div>
     </div>

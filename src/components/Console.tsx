@@ -148,7 +148,7 @@ export default function Console() {
   }));
 
   return (
-    <div className="flex flex-col gap-2 p-3 min-h-screen max-w-[1400px] mx-auto">
+    <div className="flex flex-col gap-2 p-3 min-h-screen max-w-[1800px] mx-auto">
       {/* Header */}
       <header className="flex items-center justify-between py-2 px-1">
         <div className="flex items-center gap-3">
@@ -205,31 +205,37 @@ export default function Console() {
         </div>
       </header>
 
-      {/* Decks */}
-      <div className={`grid gap-3 ${deckMode === 4 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1 lg:grid-cols-2'}`}>
-        {activeDecks.map((id) => (
-          <Deck key={id} id={id} />
-        ))}
+      {/* Main DJ Layout: [Deck A] [Center Controls] [Deck B] */}
+      <div className="grid gap-3 grid-cols-1 lg:grid-cols-[1fr_auto_1fr]">
+        {/* Deck A */}
+        <Deck key="A" id="A" />
+
+        {/* Center Column: Waveform + Sync + Mixer */}
+        <div className="flex flex-col gap-2 items-center justify-start min-w-[220px]">
+          <DualWaveform />
+          <BPMSync />
+          <CueControls />
+          <Mixer
+            channels={channels}
+            masterVolume={masterVolume}
+            crossfaderPosition={crossfaderPosition}
+            vuLevelMaster={vuLevelMaster}
+            onMasterVolumeChange={setMasterVolume}
+            onCrossfaderChange={setCrossfaderPosition}
+          />
+        </div>
+
+        {/* Deck B */}
+        <Deck key="B" id="B" />
       </div>
 
-      {/* Dual Waveform Overlay */}
-      <DualWaveform />
-
-      {/* BPM Sync + Cue */}
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <BPMSync />
-        <CueControls />
-      </div>
-
-      {/* Mixer */}
-      <Mixer
-        channels={channels}
-        masterVolume={masterVolume}
-        crossfaderPosition={crossfaderPosition}
-        vuLevelMaster={vuLevelMaster}
-        onMasterVolumeChange={setMasterVolume}
-        onCrossfaderChange={setCrossfaderPosition}
-      />
+      {/* Extra decks row (4-deck mode) */}
+      {deckMode === 4 && (
+        <div className="grid gap-3 grid-cols-1 lg:grid-cols-2">
+          <Deck key="C" id="C" />
+          <Deck key="D" id="D" />
+        </div>
+      )}
 
       {/* Search + Sampler row */}
       <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 items-stretch">
