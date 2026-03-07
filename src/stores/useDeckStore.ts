@@ -23,6 +23,8 @@ interface DeckState {
   isPlaying: boolean;
   volume: number;
   bpm: number | null;
+  playbackRate: number;
+  syncLocked: boolean;
   playerRef: YT.Player | null;
   // Loop
   loop: LoopState;
@@ -36,6 +38,8 @@ interface DeckActions {
   setPlaying: (playing: boolean) => void;
   setVolume: (volume: number) => void;
   setBPM: (bpm: number | null) => void;
+  setPlaybackRate: (rate: number) => void;
+  setSyncLocked: (locked: boolean) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   // Loop
@@ -56,6 +60,8 @@ const defaultDeckState: DeckState = {
   isPlaying: false,
   volume: 0.8,
   bpm: null,
+  playbackRate: 1,
+  syncLocked: false,
   playerRef: null,
   loop: { ...defaultLoop },
   hotCues: [null, null, null],
@@ -70,6 +76,8 @@ function createDeckStore() {
       channel: track.channel,
       isPlaying: false,
       currentTime: 0,
+      playbackRate: 1,
+      syncLocked: false,
       loop: { ...defaultLoop },
       hotCues: [null, null, null],
     }),
@@ -77,6 +85,11 @@ function createDeckStore() {
     setPlaying: (playing) => set({ isPlaying: playing }),
     setVolume: (volume) => set({ volume }),
     setBPM: (bpm) => set({ bpm }),
+    setPlaybackRate: (rate) => set((s) => {
+      s.playerRef?.setPlaybackRate(rate);
+      return { playbackRate: rate };
+    }),
+    setSyncLocked: (locked) => set({ syncLocked: locked }),
     setCurrentTime: (time) => set({ currentTime: time }),
     setDuration: (duration) => set({ duration }),
     setLoop: (loop) => set({ loop }),

@@ -6,6 +6,8 @@ export interface Track {
   channel: string;
   thumbnail: string;
   duration?: string;
+  bpm?: number | null;
+  definition?: 'hd' | 'sd';
 }
 
 export type CrossfaderCurve = 'linear' | 'equalPower' | 'cut';

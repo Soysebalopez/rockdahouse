@@ -39,12 +39,63 @@ const DIM_HEX: Record<DeckId, string> = {
   D: '#c2410c',
 };
 
+const SUPPORTED_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+
+function snapToRate(rate: number): number {
+  let closest = SUPPORTED_RATES[0];
+  let minDiff = Math.abs(rate - closest);
+  for (const r of SUPPORTED_RATES) {
+    const diff = Math.abs(rate - r);
+    if (diff < minDiff) { minDiff = diff; closest = r; }
+  }
+  return closest;
+}
+
+function PitchControl({ rate, bpm, syncLocked, onRateChange, accentColor }: {
+  rate: number;
+  bpm: number | null;
+  syncLocked: boolean;
+  onRateChange: (rate: number) => void;
+  accentColor: string;
+}) {
+  const effectiveBpm = bpm ? Math.round(bpm * rate) : null;
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>PITCH</div>
+      <input
+        type="range"
+        min={0}
+        max={SUPPORTED_RATES.length - 1}
+        step={1}
+        value={SUPPORTED_RATES.indexOf(snapToRate(rate)) !== -1 ? SUPPORTED_RATES.indexOf(snapToRate(rate)) : 3}
+        onChange={(e) => onRateChange(SUPPORTED_RATES[parseInt(e.target.value)])}
+        disabled={syncLocked}
+        className="w-20 h-1.5 rounded-full appearance-none cursor-pointer disabled:opacity-30"
+        style={{
+          background: `linear-gradient(to right, var(--bg-elevated), ${accentColor})`,
+          accentColor: accentColor,
+        }}
+      />
+      <div className="text-[10px] font-mono font-bold tabular-nums" style={{ color: rate === 1 ? 'var(--text-muted)' : accentColor }}>
+        {rate === 1 ? '1x' : `\u00d7${rate}`}
+      </div>
+      {effectiveBpm && rate !== 1 && (
+        <div className="text-[9px] font-mono tabular-nums" style={{ color: 'var(--text-secondary)' }}>
+          {bpm} \u2192 {effectiveBpm}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Deck({ id, compact }: DeckProps) {
   const store = getDeckStoreById(id);
   const {
     videoId, title, channel, duration, currentTime, isPlaying, volume,
-    bpm, loop, hotCues,
+    bpm, playbackRate, syncLocked, loop, hotCues,
     playerRef, setPlayerRef, setPlaying, setVolume, setBPM,
+    setPlaybackRate, setSyncLocked,
     setCurrentTime, setDuration, setLoop, clearLoop, setHotCue,
   } = store();
 
@@ -160,7 +211,16 @@ export default function Deck({ id, compact }: DeckProps) {
       <div className="flex items-center gap-3 flex-wrap">
         <TransportControls isPlaying={isPlaying} onPlay={handlePlay} onPause={handlePause} onStop={handleStop} accentColor={accent} />
         <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
-        <BPMDisplay trackTitle={title} onBpmChange={setBPM} accentColor={accent} />
+        <BPMDisplay trackTitle={title} onBpmChange={setBPM} accentColor={accent} playbackRate={playbackRate} />
+        <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
+        {/* Pitch fader */}
+        <PitchControl
+          rate={playbackRate}
+          bpm={bpm}
+          syncLocked={syncLocked}
+          onRateChange={setPlaybackRate}
+          accentColor={accent}
+        />
       </div>
 
       {/* Loop + Hot Cues row */}
