@@ -25,34 +25,37 @@ src/
 │   ├── layout.tsx            # Root layout, metadata, dark theme
 │   ├── page.tsx              # Single page app — renders Console
 │   ├── globals.css           # Tailwind + CSS custom properties (design tokens)
-│   └── api/bpm/route.ts      # Spotify BPM lookup (server-side, caches token)
+│   ├── api/bpm/route.ts       # Spotify BPM lookup (server-side, caches token)
+│   ├── api/bpm-batch/route.ts # Batch BPM lookup for search results (Spotify)
+│   └── api/video-details/route.ts # Batch video quality lookup (YouTube videos.list)
 ├── components/
 │   ├── Console.tsx           # Main layout: header + decks + sync + mixer + search + playlist
 │   ├── Deck.tsx              # Full deck: player + waveform + controls + BPM + loops + cues
 │   ├── YouTubePlayer.tsx     # YouTube IFrame embed wrapper
 │   ├── Waveform.tsx          # Canvas waveform with loop region + hot cue markers
+│   ├── DualWaveform.tsx      # Mirrored dual waveform overlay (A top, B bottom) with beat grid
 │   ├── Mixer.tsx             # Crossfader + channel faders + VU + master
 │   ├── Crossfader.tsx        # Horizontal slider with equal power curve
 │   ├── Fader.tsx             # Reusable vertical/horizontal slider
 │   ├── VUMeter.tsx           # Canvas-based animated level meter (simulated)
 │   ├── TransportControls.tsx # Play/Pause/Stop
-│   ├── BPMDisplay.tsx        # Auto BPM (Spotify) + TAP tempo, source indicator
-│   ├── BPMSync.tsx           # Sync button + nudge ±1% + BPM diff indicator
+│   ├── BPMDisplay.tsx        # Auto BPM (Spotify) + TAP tempo + effective BPM display
+│   ├── BPMSync.tsx           # Sync buttons + sync lock + nudge + effective BPM diff
 │   ├── CueControls.tsx       # Pre-listen: CUE A/B buttons + CUE↔MASTER mix knob
 │   ├── LoopControls.tsx      # 4/8/16 beat loops + manual IN/OUT
 │   ├── HotCues.tsx           # 3 color-coded cue points per deck
 │   ├── TrackInfo.tsx         # Title + channel + seek bar + time
-│   ├── SearchPanel.tsx       # YouTube search with debounce
-│   ├── SearchResult.tsx      # Result with + (playlist) and → A/B/C/D buttons
+│   ├── SearchPanel.tsx       # YouTube search with debounce + quality filter + metadata fetch
+│   ├── SearchResult.tsx      # Result with BPM/quality badges + playlist/deck buttons
 │   ├── Playlist.tsx          # Persistent playlist with drag-to-reorder
 │   ├── MidiStatus.tsx        # MIDI connection indicator + learn panel
 │   ├── FXControls.tsx        # Per-deck effects: brake, spinback, beat repeat, echo out, filter sweep
 │   ├── Sampler.tsx           # 16-pad sampler with Web Audio API, custom sample upload
 │   └── Equalizer.tsx         # Canvas-based rainbow bar equalizer (footer)
 ├── stores/
-│   ├── useDeckStore.ts       # 4 deck instances (A/B/C/D) via factory, loop + hotCues
+│   ├── useDeckStore.ts       # 4 deck instances (A/B/C/D) via factory, loop + hotCues + playbackRate + syncLock
 │   ├── useMixerStore.ts      # Crossfader, master volume, VU levels, deck mode, crossfader assign
-│   ├── useSearchStore.ts     # Search query, results, loading
+│   ├── useSearchStore.ts     # Search query, results, loading, quality filter, metadata
 │   ├── usePlaylistStore.ts   # Persistent playlist (localStorage)
 │   ├── useMidiStore.ts       # MIDI mappings, learn mode, connection state (persistent)
 │   ├── useEffectsStore.ts    # Per-deck effect state + effect runners (brake, spinback, etc.)
@@ -66,6 +69,8 @@ src/
 └── lib/
     ├── youtube.ts            # YouTube Data API v3 search client
     ├── types.ts              # TypeScript interfaces
+    ├── waveform.ts           # Shared deterministic waveform data generator (PRNG)
+    ├── spotify.ts            # Shared Spotify token management (server-side)
     └── samples.ts            # Synthesized audio samples (kick, snare, hihat, etc.)
 ```
 
@@ -73,8 +78,9 @@ src/
 
 - **Volume routing:** Console.tsx runs a rAF loop that reads all state via `getState()` and applies effective volume (`deckVol * crossfaderGain * masterVol`) to each YouTube player. This avoids re-render storms.
 - **Loop enforcement:** Deck.tsx polls `getCurrentTime()` at 50ms and calls `seekTo(loopStart)` when past `loopEnd`. Not sample-accurate but good enough for YouTube.
-- **BPM sync:** Uses `player.setPlaybackRate()` which changes pitch (no time-stretching). Best for small adjustments (<5% difference).
+- **BPM sync:** Uses `player.setPlaybackRate()` which changes pitch (no time-stretching). YouTube only supports specific rates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]. Pitch fader snaps to these values. Sync lock continuously enforces the target rate via the Console.tsx rAF loop.
 - **Waveform:** Deterministic PRNG seeded by videoId — not real audio data but visually consistent per track.
+- **Dual waveform:** DualWaveform.tsx uses its own rAF loop reading deck stores via `getState()` — renders both decks mirrored (A top, B bottom) with beat grid lines at `60/bpm` intervals.
 - **CUE system:** Overrides volume routing to solo one deck for preview. Uses interval-based polling separate from the main rAF loop.
 
 ## Keyboard Shortcuts
@@ -149,6 +155,22 @@ npm run lint   # ESLint
 - [x] Anti-flash script in layout.tsx (reads theme before paint)
 - [x] Canvas-based rainbow bar equalizer in footer (32 bars, rAF loop)
 
+### P8
+- [x] Dual waveform overlay (DualWaveform.tsx): mirrored canvas (A top, B bottom) with real-time playheads
+- [x] Beat grid visualization on dual waveform (vertical tick marks at BPM intervals)
+- [x] Effective BPM display on dual waveform labels (accounts for playback rate)
+- [x] Pitch fader per deck: horizontal slider snapping to YouTube-supported rates [0.25..2]
+- [x] Effective BPM calculation: `originalBPM × playbackRate` shown in BPMDisplay and BPMSync
+- [x] Sync lock toggle: continuous BPM sync enforcement via Console.tsx rAF loop
+- [x] Enhanced BPMSync.tsx: sync lock buttons, effective BPM diff, rate step nudge
+- [x] Batch BPM detection in search results via `/api/bpm-batch` (Spotify, parallel)
+- [x] Video quality detection in search results via `/api/video-details` (YouTube videos.list, 1 unit)
+- [x] BPM + HD/SD badges on SearchResult.tsx (inline pills with color coding)
+- [x] Quality filter (ALL/HD/SD) in SearchPanel.tsx with result count
+- [x] Shared `waveform.ts` utility (extracted from Waveform.tsx for reuse in DualWaveform)
+- [x] Shared `spotify.ts` utility (extracted token management from api/bpm/route.ts)
+- [x] `playbackRate` and `syncLocked` state added to deck store (reset on track load)
+
 ## Removed Features
 
 ### EQ (removed — not functional)
@@ -159,7 +181,7 @@ npm run lint   # ESLint
 ## Future Phases
 
 - P4: User auth (Supabase), cloud playlists, share sets by URL
-- P8: Recording, set export
+- P9: Recording, set export
 - Real EQ: needs a reliable audio extraction method (see "Removed Features" above)
 
 ## Monetization Analysis (YouTube API costs)

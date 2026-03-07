@@ -1,37 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-let cachedToken: { token: string; expiresAt: number } | null = null;
-
-async function getSpotifyToken(): Promise<string> {
-  if (cachedToken && Date.now() < cachedToken.expiresAt) {
-    return cachedToken.token;
-  }
-
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error('Spotify credentials not configured');
-  }
-
-  const res = await fetch('https://accounts.spotify.com/api/token', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
-    },
-    body: 'grant_type=client_credentials',
-  });
-
-  if (!res.ok) throw new Error('Failed to get Spotify token');
-
-  const data = await res.json();
-  cachedToken = {
-    token: data.access_token,
-    expiresAt: Date.now() + (data.expires_in - 60) * 1000,
-  };
-  return cachedToken.token;
-}
+import { getSpotifyToken } from '@/lib/spotify';
 
 export async function GET(req: NextRequest) {
   const title = req.nextUrl.searchParams.get('title');

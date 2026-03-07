@@ -7,9 +7,10 @@ interface BPMDisplayProps {
   trackTitle: string;
   onBpmChange?: (bpm: number | null) => void;
   accentColor: string;
+  playbackRate?: number;
 }
 
-export default function BPMDisplay({ trackTitle, onBpmChange, accentColor }: BPMDisplayProps) {
+export default function BPMDisplay({ trackTitle, onBpmChange, accentColor, playbackRate = 1 }: BPMDisplayProps) {
   const { bpm: tapBpm, tap } = useTapTempo();
   const [apiBpm, setApiBpm] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -51,6 +52,7 @@ export default function BPMDisplay({ trackTitle, onBpmChange, accentColor }: BPM
 
   // Tap BPM overrides API BPM
   const displayBpm = tapBpm ?? apiBpm;
+  const effectiveBpm = displayBpm && playbackRate !== 1 ? Math.round(displayBpm * playbackRate) : null;
 
   useEffect(() => {
     onBpmChange?.(displayBpm);
@@ -67,9 +69,14 @@ export default function BPMDisplay({ trackTitle, onBpmChange, accentColor }: BPM
       <div className="text-2xl font-bold tabular-nums" style={{ color: 'var(--text-primary)', minWidth: 60, textAlign: 'center' }}>
         {loading ? '...' : (displayBpm ?? '---')}
       </div>
+      {effectiveBpm && (
+        <div className="text-[10px] font-mono tabular-nums" style={{ color: accentColor }}>
+          {'\u2192'} {effectiveBpm}
+        </div>
+      )}
       {source && (
         <div className="text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-          {source === 'spotify' ? '♫ spotify' : '⏱ tap'}
+          {source === 'spotify' ? '\u266B spotify' : '\u23F1 tap'}
         </div>
       )}
       <button

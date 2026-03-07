@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import Deck from './Deck';
+import DualWaveform from './DualWaveform';
 import Mixer from './Mixer';
 import BPMSync from './BPMSync';
 import CueControls from './CueControls';
@@ -62,7 +63,22 @@ export default function Console() {
 
   const vuAnimRef = useRef<number>(undefined);
 
-  // Main animation loop: applies volume to YouTube players + simulates VU meters
+  // YouTube-supported playback rates for sync snapping
+  const SUPPORTED_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+  const snapToRate = (rate: number) => {
+    let closest = SUPPORTED_RATES[0];
+    let minDiff = Math.abs(rate - closest);
+    for (const r of SUPPORTED_RATES) {
+      const diff = Math.abs(rate - r);
+      if (diff < minDiff) { minDiff = diff; closest = r; }
+    }
+    return closest;
+  };
+
+  // Track last applied sync rates to avoid redundant setPlaybackRate calls
+  const lastSyncRateRef = useRef<Record<string, number>>({});
+
+  // Main animation loop: applies volume to YouTube players + simulates VU meters + continuous sync
   useEffect(() => {
     const tick = () => {
       const mx = useMixerStore.getState();
@@ -72,6 +88,24 @@ export default function Console() {
 
       const activeDecks = mx.deckMode === 4 ? ALL_DECKS : (['A', 'B'] as DeckId[]);
       let maxLevel = 0;
+
+      // Continuous sync enforcement (A↔B)
+      const dA = DECK_STORES.A.getState();
+      const dB = DECK_STORES.B.getState();
+      if (dA.syncLocked && dA.bpm && dB.bpm) {
+        const targetRate = snapToRate(dB.bpm / dA.bpm);
+        if (lastSyncRateRef.current.A !== targetRate) {
+          lastSyncRateRef.current.A = targetRate;
+          DECK_STORES.A.getState().setPlaybackRate(targetRate);
+        }
+      }
+      if (dB.syncLocked && dA.bpm && dB.bpm) {
+        const targetRate = snapToRate(dA.bpm / dB.bpm);
+        if (lastSyncRateRef.current.B !== targetRate) {
+          lastSyncRateRef.current.B = targetRate;
+          DECK_STORES.B.getState().setPlaybackRate(targetRate);
+        }
+      }
 
       for (const deckId of activeDecks) {
         const d = DECK_STORES[deckId].getState();
@@ -177,6 +211,9 @@ export default function Console() {
           <Deck key={id} id={id} />
         ))}
       </div>
+
+      {/* Dual Waveform Overlay */}
+      <DualWaveform />
 
       {/* BPM Sync + Cue */}
       <div className="flex flex-wrap items-center justify-center gap-3">
