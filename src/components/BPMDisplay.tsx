@@ -1,7 +1,7 @@
 'use client';
 
 import { useTapTempo } from '@/hooks/useTapTempo';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface BPMDisplayProps {
   trackTitle: string;
@@ -11,10 +11,12 @@ interface BPMDisplayProps {
 }
 
 export default function BPMDisplay({ trackTitle, onBpmChange, accentColor, playbackRate = 1 }: BPMDisplayProps) {
-  const { bpm: tapBpm, tap } = useTapTempo();
+  const { bpm: tapBpm, tap, reset: resetTap, tapCount } = useTapTempo();
   const [apiBpm, setApiBpm] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [source, setSource] = useState<'tap' | 'spotify' | null>(null);
+  const [tapFlash, setTapFlash] = useState(false);
+  const flashTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Fetch BPM from Spotify when track changes
   useEffect(() => {
@@ -61,7 +63,20 @@ export default function BPMDisplay({ trackTitle, onBpmChange, accentColor, playb
   const handleTap = useCallback(() => {
     tap();
     setSource('tap');
+    // Flash animation
+    setTapFlash(true);
+    if (flashTimeout.current) clearTimeout(flashTimeout.current);
+    flashTimeout.current = setTimeout(() => setTapFlash(false), 150);
   }, [tap]);
+
+  const handleReset = useCallback(() => {
+    resetTap();
+    if (apiBpm) {
+      setSource('spotify');
+    } else {
+      setSource(null);
+    }
+  }, [resetTap, apiBpm]);
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -76,16 +91,40 @@ export default function BPMDisplay({ trackTitle, onBpmChange, accentColor, playb
       )}
       {source && (
         <div className="text-[9px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-          {source === 'spotify' ? '\u266B spotify' : '\u23F1 tap'}
+          {source === 'spotify' ? '\u266B spotify' : `\u23F1 tap (${tapCount})`}
         </div>
       )}
-      <button
-        onClick={handleTap}
-        className="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider transition-colors"
-        style={{ background: accentColor, color: '#fff' }}
-      >
-        TAP
-      </button>
+      {!source && !loading && !displayBpm && trackTitle && (
+        <div className="text-[9px]" style={{ color: 'var(--text-muted)' }}>tap to set BPM</div>
+      )}
+      <div className="flex items-center gap-1">
+        <button
+          onClick={handleTap}
+          className="px-3 py-1 rounded text-xs font-bold uppercase tracking-wider"
+          style={{
+            background: accentColor,
+            color: '#fff',
+            transform: tapFlash ? 'scale(1.1)' : 'scale(1)',
+            boxShadow: tapFlash ? `0 0 12px ${accentColor}` : 'none',
+            transition: 'transform 100ms ease, box-shadow 100ms ease',
+          }}
+        >
+          TAP{tapCount > 0 ? ` (${tapCount})` : ''}
+        </button>
+        {tapBpm && (
+          <button
+            onClick={handleReset}
+            className="px-1.5 py-1 rounded text-[10px] font-bold"
+            style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
+            title="Clear tap BPM"
+          >
+            {'\u2715'}
+          </button>
+        )}
+      </div>
+      {tapCount === 1 && (
+        <div className="text-[9px] animate-pulse" style={{ color: 'var(--text-muted)' }}>tap again...</div>
+      )}
     </div>
   );
 }

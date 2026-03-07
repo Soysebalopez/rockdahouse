@@ -148,9 +148,9 @@ export default function Console() {
   }));
 
   return (
-    <div className="flex flex-col gap-3 p-4 min-h-screen max-w-[1400px] mx-auto">
+    <div className="flex flex-col gap-2 p-3 min-h-screen max-w-[1400px] mx-auto">
       {/* Header */}
-      <header className="flex items-center justify-between py-3 px-1">
+      <header className="flex items-center justify-between py-2 px-1">
         <div className="flex items-center gap-3">
           <span className="text-xl font-black tracking-tight" style={{
             background: 'var(--title-gradient)',

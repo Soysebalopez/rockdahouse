@@ -62,8 +62,8 @@ export default function SearchPanel({ onLoadToDeck }: SearchPanelProps) {
           }
         }
       }
-    } catch {
-      // Metadata is optional — silently fail
+    } catch (err) {
+      console.warn('[SearchPanel] metadata fetch failed:', err);
     } finally {
       setLoadingMeta(false);
     }

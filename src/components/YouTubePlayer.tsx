@@ -26,7 +26,7 @@ export default function YouTubePlayer({ deckId, videoId, onReady, onStateChange 
   }, [isReady, videoId, loadVideo]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: '16/9', maxHeight: 200 }}>
+    <div className="relative w-full overflow-hidden rounded-lg" style={{ aspectRatio: '16/9', maxHeight: 120 }}>
       {!videoId && (
         <div className="absolute inset-0 flex items-center justify-center z-10"
           style={{ background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)' }}>

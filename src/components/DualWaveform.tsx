@@ -4,29 +4,16 @@ import { useEffect, useRef, useMemo } from 'react';
 import { generateWaveformData } from '@/lib/waveform';
 import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
 
-const BARS = 200;
-const HEIGHT = 100;
-const HALF = HEIGHT / 2;
+const BARS = 300;
+const HEIGHT = 120;
 
 const COLORS = {
-  A: { accent: '#ec4899', dim: '#9d174d' },
-  B: { accent: '#3b82f6', dim: '#1e40af' },
+  A: { accent: '#ec4899', dim: '#9d174d', grid: 'rgba(236, 72, 153, 0.25)' },
+  B: { accent: '#3b82f6', dim: '#1e40af', grid: 'rgba(59, 130, 246, 0.25)' },
 };
 
-// YouTube-supported playback rates
-const SUPPORTED_RATES = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
-
-function snapToRate(rate: number): number {
-  let closest = SUPPORTED_RATES[0];
-  let minDiff = Math.abs(rate - closest);
-  for (const r of SUPPORTED_RATES) {
-    const diff = Math.abs(rate - r);
-    if (diff < minDiff) {
-      minDiff = diff;
-      closest = r;
-    }
-  }
-  return closest;
+function truncate(s: string, max: number): string {
+  return s.length > max ? s.slice(0, max) + '...' : s;
 }
 
 export default function DualWaveform() {
@@ -34,7 +21,6 @@ export default function DualWaveform() {
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(undefined);
 
-  // Generate waveform data reactively when videoId changes
   const videoIdA = useDeckAStore((s) => s.videoId);
   const videoIdB = useDeckBStore((s) => s.videoId);
 
@@ -48,152 +34,206 @@ export default function DualWaveform() {
 
     const draw = () => {
       const width = container.clientWidth;
-      if (canvas.width !== width) canvas.width = width;
-      if (canvas.height !== HEIGHT) canvas.height = HEIGHT;
+      const dpr = window.devicePixelRatio || 1;
+      const cw = Math.floor(width * dpr);
+      const ch = Math.floor(HEIGHT * dpr);
+
+      if (canvas.width !== cw || canvas.height !== ch) {
+        canvas.width = cw;
+        canvas.height = ch;
+      }
 
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) { animRef.current = requestAnimationFrame(draw); return; }
+
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, HEIGHT);
+
+      // Dark background
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fillRect(0, 0, width, HEIGHT);
 
       const stateA = useDeckAStore.getState();
       const stateB = useDeckBStore.getState();
-
-      ctx.clearRect(0, 0, width, HEIGHT);
-
-      // Background
-      ctx.fillStyle = 'rgba(0,0,0,0.3)';
-      ctx.fillRect(0, 0, width, HEIGHT);
-
       const barWidth = width / BARS;
       const gap = 1;
+      const maxBarH = HEIGHT - 8;
 
-      // Draw Deck A (top half — bars grow upward from center)
+      // === DECK A: bars grow UPWARD from bottom ===
       if (dataA && stateA.duration > 0) {
         const progressA = stateA.currentTime / stateA.duration;
 
-        // Beat grid for A
+        // Beat grid A
         if (stateA.bpm) {
-          const effectiveBpm = stateA.bpm * stateA.playbackRate;
-          const beatInterval = 60 / effectiveBpm;
-          const totalBeats = stateA.duration / beatInterval;
-          ctx.strokeStyle = 'rgba(236, 72, 153, 0.15)';
-          ctx.lineWidth = 1;
-          for (let b = 0; b < totalBeats; b++) {
-            const beatTime = b * beatInterval;
-            const x = (beatTime / stateA.duration) * width;
+          const effBpm = stateA.bpm * stateA.playbackRate;
+          const beatSec = 60 / effBpm;
+          ctx.strokeStyle = COLORS.A.grid;
+          ctx.lineWidth = 1.5;
+          for (let t = 0; t < stateA.duration; t += beatSec) {
+            const x = (t / stateA.duration) * width;
             if (x > width) break;
             ctx.beginPath();
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, HALF);
+            ctx.moveTo(x, HEIGHT);
+            ctx.lineTo(x, HEIGHT * 0.5);
             ctx.stroke();
           }
         }
 
-        // Loop region
+        // Loop region A
         if (stateA.loop.active && stateA.loop.end > 0) {
           const lsX = (stateA.loop.start / stateA.duration) * width;
-          const leX = (stateA.loop.end / stateA.duration) * width;
-          ctx.fillStyle = 'rgba(236, 72, 153, 0.12)';
-          ctx.fillRect(lsX, 0, leX - lsX, HALF);
+          const leX = Math.min((stateA.loop.end / stateA.duration) * width, width);
+          ctx.fillStyle = 'rgba(236, 72, 153, 0.08)';
+          ctx.fillRect(lsX, 0, leX - lsX, HEIGHT);
         }
 
-        // Waveform bars
+        // Waveform bars A (from bottom up)
+        ctx.globalAlpha = 0.7;
         for (let i = 0; i < BARS; i++) {
           const x = i * barWidth;
           const amp = dataA[i];
-          const barH = amp * (HALF - 4);
-          const y = HALF - barH;
+          const barH = amp * maxBarH;
           const barProgress = i / BARS;
           const isPlayed = barProgress <= progressA;
-
           ctx.fillStyle = isPlayed ? COLORS.A.accent : COLORS.A.dim;
-          ctx.globalAlpha = isPlayed ? 1 : 0.5;
-          ctx.fillRect(x + gap / 2, y, barWidth - gap, barH);
+          ctx.fillRect(x + gap / 2, HEIGHT - barH, barWidth - gap, barH);
         }
         ctx.globalAlpha = 1;
 
-        // Playhead A
+        // Hot cue markers A
+        const cuesA = stateA.hotCues;
+        if (cuesA) {
+          for (const cue of cuesA) {
+            if (!cue) continue;
+            const cx = (cue.time / stateA.duration) * width;
+            ctx.fillStyle = cue.color;
+            ctx.beginPath();
+            ctx.moveTo(cx - 4, HEIGHT);
+            ctx.lineTo(cx + 4, HEIGHT);
+            ctx.lineTo(cx, HEIGHT - 8);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+
+        // Playhead A — glow + solid
         const pxA = progressA * width;
+        ctx.shadowColor = COLORS.A.accent;
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = COLORS.A.accent;
+        ctx.fillRect(pxA - 1.5, 0, 3, HEIGHT);
+        ctx.shadowBlur = 0;
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(pxA - 1, 0, 2, HALF);
+        ctx.fillRect(pxA - 0.5, 0, 1, HEIGHT);
       }
 
-      // Draw Deck B (bottom half — bars grow downward from center)
+      // === DECK B: bars grow DOWNWARD from top ===
       if (dataB && stateB.duration > 0) {
         const progressB = stateB.currentTime / stateB.duration;
 
-        // Beat grid for B
+        // Beat grid B
         if (stateB.bpm) {
-          const effectiveBpm = stateB.bpm * stateB.playbackRate;
-          const beatInterval = 60 / effectiveBpm;
-          const totalBeats = stateB.duration / beatInterval;
-          ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
-          ctx.lineWidth = 1;
-          for (let b = 0; b < totalBeats; b++) {
-            const beatTime = b * beatInterval;
-            const x = (beatTime / stateB.duration) * width;
+          const effBpm = stateB.bpm * stateB.playbackRate;
+          const beatSec = 60 / effBpm;
+          ctx.strokeStyle = COLORS.B.grid;
+          ctx.lineWidth = 1.5;
+          for (let t = 0; t < stateB.duration; t += beatSec) {
+            const x = (t / stateB.duration) * width;
             if (x > width) break;
             ctx.beginPath();
-            ctx.moveTo(x, HALF);
-            ctx.lineTo(x, HEIGHT);
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, HEIGHT * 0.5);
             ctx.stroke();
           }
         }
 
-        // Loop region
+        // Loop region B
         if (stateB.loop.active && stateB.loop.end > 0) {
           const lsX = (stateB.loop.start / stateB.duration) * width;
-          const leX = (stateB.loop.end / stateB.duration) * width;
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.12)';
-          ctx.fillRect(lsX, HALF, leX - lsX, HALF);
+          const leX = Math.min((stateB.loop.end / stateB.duration) * width, width);
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.08)';
+          ctx.fillRect(lsX, 0, leX - lsX, HEIGHT);
         }
 
-        // Waveform bars
+        // Waveform bars B (from top down)
+        ctx.globalAlpha = 0.7;
         for (let i = 0; i < BARS; i++) {
           const x = i * barWidth;
           const amp = dataB[i];
-          const barH = amp * (HALF - 4);
+          const barH = amp * maxBarH;
           const barProgress = i / BARS;
           const isPlayed = barProgress <= progressB;
-
           ctx.fillStyle = isPlayed ? COLORS.B.accent : COLORS.B.dim;
-          ctx.globalAlpha = isPlayed ? 1 : 0.5;
-          ctx.fillRect(x + gap / 2, HALF, barWidth - gap, barH);
+          ctx.fillRect(x + gap / 2, 0, barWidth - gap, barH);
         }
         ctx.globalAlpha = 1;
 
-        // Playhead B
+        // Hot cue markers B
+        const cuesB = stateB.hotCues;
+        if (cuesB) {
+          for (const cue of cuesB) {
+            if (!cue) continue;
+            const cx = (cue.time / stateB.duration) * width;
+            ctx.fillStyle = cue.color;
+            ctx.beginPath();
+            ctx.moveTo(cx - 4, 0);
+            ctx.lineTo(cx + 4, 0);
+            ctx.lineTo(cx, 8);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+
+        // Playhead B — glow + solid
         const pxB = progressB * width;
+        ctx.shadowColor = COLORS.B.accent;
+        ctx.shadowBlur = 6;
+        ctx.fillStyle = COLORS.B.accent;
+        ctx.fillRect(pxB - 1.5, 0, 3, HEIGHT);
+        ctx.shadowBlur = 0;
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(pxB - 1, HALF, 2, HALF);
+        ctx.fillRect(pxB - 0.5, 0, 1, HEIGHT);
       }
 
-      // Center dividing line
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(0, HALF - 0.5, width, 1);
+      // === Labels ===
+      ctx.shadowBlur = 0;
+      ctx.font = 'bold 11px system-ui, sans-serif';
 
-      // Deck labels
-      ctx.font = 'bold 10px monospace';
+      // Deck A label (bottom-left)
+      const titleA = stateA.title ? truncate(stateA.title, 30) : '';
+      const effBpmA = stateA.bpm ? Math.round(stateA.bpm * stateA.playbackRate) : null;
       ctx.fillStyle = COLORS.A.accent;
-      ctx.fillText('A', 4, 12);
-      ctx.fillStyle = COLORS.B.accent;
-      ctx.fillText('B', 4, HEIGHT - 4);
-
-      // Effective BPM labels
-      if (stateA.bpm) {
-        const effA = Math.round(stateA.bpm * stateA.playbackRate);
-        ctx.font = '9px monospace';
-        ctx.fillStyle = 'rgba(236, 72, 153, 0.8)';
+      ctx.textAlign = 'left';
+      ctx.fillText(`A${titleA ? ': ' + titleA : ''}`, 6, HEIGHT - 6);
+      if (effBpmA) {
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'right';
-        ctx.fillText(`${effA} BPM`, width - 4, 12);
-        ctx.textAlign = 'left';
+        ctx.fillText(`${effBpmA} BPM`, width - 6, HEIGHT - 6);
       }
-      if (stateB.bpm) {
-        const effB = Math.round(stateB.bpm * stateB.playbackRate);
-        ctx.font = '9px monospace';
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.8)';
+
+      // Deck B label (top-left)
+      const titleB = stateB.title ? truncate(stateB.title, 30) : '';
+      const effBpmB = stateB.bpm ? Math.round(stateB.bpm * stateB.playbackRate) : null;
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.fillStyle = COLORS.B.accent;
+      ctx.textAlign = 'left';
+      ctx.fillText(`B${titleB ? ': ' + titleB : ''}`, 6, 14);
+      if (effBpmB) {
+        ctx.font = 'bold 10px monospace';
         ctx.textAlign = 'right';
-        ctx.fillText(`${effB} BPM`, width - 4, HEIGHT - 4);
-        ctx.textAlign = 'left';
+        ctx.fillText(`${effBpmB} BPM`, width - 6, 14);
+      }
+
+      // Center line (subtle)
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.06)';
+      ctx.fillRect(0, HEIGHT / 2 - 0.5, width, 1);
+
+      // Placeholder if no tracks
+      if (!dataA && !dataB) {
+        ctx.font = '12px system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.textAlign = 'center';
+        ctx.fillText('Load tracks to see waveforms', width / 2, HEIGHT / 2 + 4);
       }
 
       animRef.current = requestAnimationFrame(draw);
@@ -205,10 +245,6 @@ export default function DualWaveform() {
     };
   }, [dataA, dataB]);
 
-  const hasAnyTrack = videoIdA || videoIdB;
-
-  if (!hasAnyTrack) return null;
-
   return (
     <div
       ref={containerRef}
@@ -219,7 +255,10 @@ export default function DualWaveform() {
         border: '1px solid var(--border-default)',
       }}
     >
-      <canvas ref={canvasRef} style={{ width: '100%', height: HEIGHT }} />
+      <canvas
+        ref={canvasRef}
+        style={{ width: '100%', height: HEIGHT, display: 'block' }}
+      />
     </div>
   );
 }

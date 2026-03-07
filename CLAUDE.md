@@ -156,9 +156,10 @@ npm run lint   # ESLint
 - [x] Canvas-based rainbow bar equalizer in footer (32 bars, rAF loop)
 
 ### P8
-- [x] Dual waveform overlay (DualWaveform.tsx): mirrored canvas (A top, B bottom) with real-time playheads
-- [x] Beat grid visualization on dual waveform (vertical tick marks at BPM intervals)
+- [x] Dual waveform overlay (DualWaveform.tsx): overlapped canvas (A from bottom, B from top) with glow playheads, hot cue markers, track titles
+- [x] Beat grid visualization on dual waveform (1.5px lines at BPM intervals, 25% opacity)
 - [x] Effective BPM display on dual waveform labels (accounts for playback rate)
+- [x] HiDPI canvas rendering (devicePixelRatio scaling)
 - [x] Pitch fader per deck: horizontal slider snapping to YouTube-supported rates [0.25..2]
 - [x] Effective BPM calculation: `originalBPM × playbackRate` shown in BPMDisplay and BPMSync
 - [x] Sync lock toggle: continuous BPM sync enforcement via Console.tsx rAF loop
@@ -170,6 +171,13 @@ npm run lint   # ESLint
 - [x] Shared `waveform.ts` utility (extracted from Waveform.tsx for reuse in DualWaveform)
 - [x] Shared `spotify.ts` utility (extracted token management from api/bpm/route.ts)
 - [x] `playbackRate` and `syncLocked` state added to deck store (reset on track load)
+- [x] Tap tempo UX: tap flash animation, tap count badge, reset button, "tap again" hint
+- [x] Tap tempo keeps last BPM on timeout (no silent reset), exposed tapCount
+- [x] Sync contextual help: shows "TAP BPM on Deck X" when BPM missing, "Load tracks" when empty
+- [x] Sync buttons larger (px-3 py-1.5), LOCK buttons with glow, disabled when no BPM
+- [x] BPM/quality badges always visible in search: loading shimmer, "N/A" fallback
+- [x] Compact deck layout: smaller YouTube player (120px max), smaller jog wheel (90px), tighter gaps
+- [x] Compact console layout: reduced padding/gaps so search panel visible without scrolling
 
 ## Removed Features
 
