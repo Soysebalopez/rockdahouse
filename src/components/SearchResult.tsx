@@ -3,6 +3,7 @@
 import type { Track, DeckId } from '@/lib/types';
 import { usePlaylistStore } from '@/stores/usePlaylistStore';
 import { useMixerStore } from '@/stores/useMixerStore';
+import { useSearchStore } from '@/stores/useSearchStore';
 
 interface SearchResultProps {
   track: Track;
@@ -19,8 +20,13 @@ const DECK_BUTTONS: { id: DeckId; bg: string }[] = [
 export default function SearchResult({ track, onLoadToDeck }: SearchResultProps) {
   const addTrack = usePlaylistStore((s) => s.addTrack);
   const deckMode = useMixerStore((s) => s.deckMode);
+  const loadingMeta = useSearchStore((s) => s.loadingMeta);
 
   const visibleDecks = deckMode === 4 ? DECK_BUTTONS : DECK_BUTTONS.slice(0, 2);
+
+  // Determine badge states
+  const bpmLoading = loadingMeta && track.bpm === undefined;
+  const qualityLoading = loadingMeta && track.definition === undefined;
 
   return (
     <div
@@ -37,42 +43,33 @@ export default function SearchResult({ track, onLoadToDeck }: SearchResultProps)
       />
       <div className="flex-1 min-w-0">
         <div className="text-sm truncate" style={{ color: 'var(--text-primary)' }}>{track.title}</div>
-        <div className="flex items-center gap-1.5 mt-0.5">
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
           <span className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{track.channel}</span>
-          {track.bpm !== undefined && (
-            <>
-              <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>&middot;</span>
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{
-                  background: track.bpm ? 'rgba(236, 72, 153, 0.15)' : 'transparent',
-                  color: track.bpm ? 'var(--accent-a)' : 'var(--text-muted)',
-                }}
-              >
-                {track.bpm ? `${track.bpm} BPM` : '---'}
-              </span>
-            </>
+          <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>&middot;</span>
+          {/* BPM badge */}
+          {bpmLoading ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full animate-pulse" style={{ background: 'rgba(156, 163, 175, 0.15)', color: 'var(--text-muted)' }}>
+              ... BPM
+            </span>
+          ) : track.bpm ? (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(236, 72, 153, 0.15)', color: 'var(--accent-a)' }}>
+              {track.bpm} BPM
+            </span>
+          ) : (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ color: 'var(--text-muted)' }}>
+              N/A
+            </span>
           )}
-          {track.definition && (
-            <>
-              <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>&middot;</span>
-              <span
-                className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{
-                  background: track.definition === 'hd' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(156, 163, 175, 0.15)',
-                  color: track.definition === 'hd' ? '#22c55e' : 'var(--text-muted)',
-                }}
-              >
-                {track.definition.toUpperCase()}
-              </span>
-            </>
-          )}
-          {track.bpm === undefined && track.definition === undefined && (
-            <>
-              <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>&middot;</span>
-              <span className="text-[9px]" style={{ color: 'var(--text-muted)' }}>...</span>
-            </>
-          )}
+          {/* Quality badge */}
+          {qualityLoading ? (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full animate-pulse" style={{ background: 'rgba(156, 163, 175, 0.15)', color: 'var(--text-muted)' }}>
+              ...
+            </span>
+          ) : track.definition ? (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: track.definition === 'hd' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(156, 163, 175, 0.15)', color: track.definition === 'hd' ? '#22c55e' : 'var(--text-muted)' }}>
+              {track.definition.toUpperCase()}
+            </span>
+          ) : null}
         </div>
       </div>
       <div className="flex gap-1.5 shrink-0">

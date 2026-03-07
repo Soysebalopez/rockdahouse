@@ -156,7 +156,7 @@ export default function Deck({ id, compact }: DeckProps) {
 
   return (
     <div
-      className="flex flex-col gap-2.5 p-4 rounded-xl relative overflow-hidden"
+      className="flex flex-col gap-1.5 p-3 rounded-xl relative overflow-hidden"
       style={{
         background: 'var(--bg-surface)',
         border: `1px solid var(--border-default)`,
@@ -183,8 +183,8 @@ export default function Deck({ id, compact }: DeckProps) {
       </div>
 
       {/* Player + Jog Wheel row */}
-      <div className="flex gap-3 items-start">
-        <div className="flex-1 flex flex-col gap-2">
+      <div className="flex gap-2 items-start">
+        <div className="flex-1 flex flex-col gap-1.5">
           <YouTubePlayer deckId={id} videoId={videoId} onReady={handleReady} onStateChange={handleStateChange} />
           <Waveform
             videoId={videoId}
@@ -192,6 +192,7 @@ export default function Deck({ id, compact }: DeckProps) {
             duration={duration}
             accentColor={ACCENT_HEX[id]}
             dimColor={DIM_HEX[id]}
+            height={36}
             loop={loop.active ? { start: loop.start, end: loop.end } : undefined}
             hotCues={hotCues}
           />
@@ -203,12 +204,12 @@ export default function Deck({ id, compact }: DeckProps) {
           onNudge={handleNudge}
           onScratch={handleScratch}
           accentColor={ACCENT_HEX[id]}
-          size={130}
+          size={90}
         />
       </div>
 
       {/* Controls row */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap">
         <TransportControls isPlaying={isPlaying} onPlay={handlePlay} onPause={handlePause} onStop={handleStop} accentColor={accent} />
         <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
         <BPMDisplay trackTitle={title} onBpmChange={setBPM} accentColor={accent} playbackRate={playbackRate} />
