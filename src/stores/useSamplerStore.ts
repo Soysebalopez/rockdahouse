@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { DEFAULT_SAMPLES, type SampleDef } from '@/lib/samples';
+import { DEFAULT_SAMPLES } from '@/lib/samples';
+import { useAudioConfigStore } from './useAudioConfigStore';
 
 export interface Pad {
   name: string;
@@ -26,6 +27,7 @@ interface SamplerActions {
   stopPad: (index: number) => void;
   loadCustomSample: (index: number, file: File) => void;
   togglePadLoop: (index: number) => void;
+  routeToDevice: (deviceId: string) => void;
 }
 
 // Track active source nodes outside Zustand
@@ -61,6 +63,12 @@ export const useSamplerStore = create<SamplerState & SamplerActions>((set, get) 
     const masterGain = audioCtx.createGain();
     masterGain.gain.value = state.volume;
     masterGain.connect(audioCtx.destination);
+
+    // Route to configured device if setSinkId is available
+    const deviceId = useAudioConfigStore.getState().masterDeviceId;
+    if (deviceId && deviceId !== 'default' && 'setSinkId' in audioCtx) {
+      (audioCtx as any).setSinkId(deviceId).catch(() => { /* fallback to default */ });
+    }
 
     // Generate default sample buffers
     const pads = state.pads.map((pad, i) => ({
@@ -126,6 +134,13 @@ export const useSamplerStore = create<SamplerState & SamplerActions>((set, get) 
       pads[index] = { ...pads[index], isLoop: !pads[index].isLoop };
       return { pads };
     }),
+
+  routeToDevice: (deviceId) => {
+    const { audioCtx } = get();
+    if (audioCtx && 'setSinkId' in audioCtx) {
+      (audioCtx as any).setSinkId(deviceId).catch(() => { /* unsupported or failed */ });
+    }
+  },
 }));
 
 function triggerPadInternal(

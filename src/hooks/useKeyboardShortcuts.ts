@@ -3,6 +3,7 @@ import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
 import { useMixerStore } from '@/stores/useMixerStore';
 import { useSearchStore } from '@/stores/useSearchStore';
 import { usePlaylistStore } from '@/stores/usePlaylistStore';
+import type { DeckId } from '@/lib/types';
 
 export function useKeyboardShortcuts() {
   useEffect(() => {
@@ -48,6 +49,18 @@ export function useKeyboardShortcuts() {
         case 'p':
         case 'P':
           usePlaylistStore.getState().toggleOpen();
+          break;
+        case '1':
+          mixer.toggleCue('A' as DeckId);
+          break;
+        case '2':
+          mixer.toggleCue('B' as DeckId);
+          break;
+        case '3':
+          mixer.toggleCue('C' as DeckId);
+          break;
+        case '4':
+          mixer.toggleCue('D' as DeckId);
           break;
       }
     };

@@ -12,8 +12,10 @@ interface ChannelData {
   vuLevel: number;
   accentColor: string;
   crossfaderAssign: CrossfaderSide;
+  isCued: boolean;
   onVolumeChange: (v: number) => void;
   onAssignChange: (side: CrossfaderSide) => void;
+  onCueToggle: () => void;
 }
 
 interface MixerProps {
@@ -28,6 +30,19 @@ interface MixerProps {
 function ChannelStrip({ ch }: { ch: ChannelData }) {
   return (
     <div className="flex flex-col items-center gap-1">
+      {/* CUE / Listen button */}
+      <button
+        onClick={ch.onCueToggle}
+        className="px-2 py-1 rounded text-[9px] font-bold transition-all"
+        style={{
+          background: ch.isCued ? ch.accentColor : 'var(--bg-elevated)',
+          color: ch.isCued ? '#fff' : 'var(--text-muted)',
+          boxShadow: ch.isCued ? `0 0 6px ${ch.accentColor}` : 'none',
+        }}
+        title={`CUE/Listen Deck ${ch.id}`}
+      >
+        CUE
+      </button>
       <div className="flex items-end gap-1.5">
         <VUMeter level={ch.vuLevel} height={80} />
         <Fader

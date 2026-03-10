@@ -7,11 +7,14 @@ interface JogWheelProps {
   currentTime: number;
   onNudge: (seconds: number) => void;
   onScratch: (delta: number) => void;
+  scratchMode?: boolean;
+  pitchValue?: number;
+  pitchRange?: number;
   accentColor: string;
   size?: number;
 }
 
-export default function JogWheel({ isPlaying, currentTime, onNudge, onScratch, accentColor, size = 140 }: JogWheelProps) {
+export default function JogWheel({ isPlaying, currentTime, onNudge, onScratch, scratchMode = true, pitchValue = 0, pitchRange = 8, accentColor, size = 140 }: JogWheelProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rotationRef = useRef(0);
   const rafRef = useRef<number>(undefined);
@@ -127,10 +130,16 @@ export default function JogWheel({ isPlaying, currentTime, onNudge, onScratch, a
     rotationRef.current += delta;
     lastAngleRef.current = angle;
 
-    // Convert rotation delta to time nudge (1 full rotation ≈ 2 seconds)
-    const timeNudge = (delta / (Math.PI * 2)) * 2;
-    onScratch(timeNudge);
-  }, [getAngle, onScratch]);
+    if (scratchMode) {
+      // Scratch mode: seek through the track
+      const timeNudge = (delta / (Math.PI * 2)) * 2;
+      onScratch(timeNudge);
+    }
+    // Pitch bend mode: handled via onNudge as a rate change (no-op during drag,
+    // the visual rotation gives feedback). We don't have direct player access here,
+    // so pitch bend is managed by Deck.tsx via onScratch callback.
+    // For pitch bend, we reuse onScratch but Deck can detect mode.
+  }, [getAngle, onScratch, scratchMode]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     isDraggingRef.current = false;

@@ -26,6 +26,10 @@ interface DeckState {
   playbackRate: number;
   syncLocked: boolean;
   playerRef: YT.Player | null;
+  // Pitch
+  pitchRange: 8 | 16;
+  pitchValue: number; // -1 to +1 normalized
+  scratchMode: boolean; // true = scratch (seek), false = pitch bend (rate)
   // Loop
   loop: LoopState;
   // Hot cues
@@ -42,6 +46,10 @@ interface DeckActions {
   setSyncLocked: (locked: boolean) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
+  // Pitch
+  setPitchRange: (range: 8 | 16) => void;
+  setPitchValue: (value: number) => void;
+  setScratchMode: (mode: boolean) => void;
   // Loop
   setLoop: (loop: LoopState) => void;
   clearLoop: () => void;
@@ -63,6 +71,9 @@ const defaultDeckState: DeckState = {
   playbackRate: 1,
   syncLocked: false,
   playerRef: null,
+  pitchRange: 8,
+  pitchValue: 0,
+  scratchMode: true,
   loop: { ...defaultLoop },
   hotCues: [null, null, null],
 };
@@ -78,6 +89,7 @@ function createDeckStore() {
       currentTime: 0,
       playbackRate: 1,
       syncLocked: false,
+      pitchValue: 0,
       loop: { ...defaultLoop },
       hotCues: [null, null, null],
     }),
@@ -92,6 +104,14 @@ function createDeckStore() {
     setSyncLocked: (locked) => set({ syncLocked: locked }),
     setCurrentTime: (time) => set({ currentTime: time }),
     setDuration: (duration) => set({ duration }),
+    setPitchRange: (range) => set({ pitchRange: range }),
+    setPitchValue: (value) => set((s) => {
+      const clamped = Math.max(-1, Math.min(1, value));
+      const rate = 1 + clamped * (s.pitchRange / 100);
+      s.playerRef?.setPlaybackRate(Math.max(0.5, Math.min(2, rate)));
+      return { pitchValue: clamped };
+    }),
+    setScratchMode: (mode) => set({ scratchMode: mode }),
     setLoop: (loop) => set({ loop }),
     clearLoop: () => set({ loop: { ...defaultLoop } }),
     setHotCue: (index, cue) => set((s) => {

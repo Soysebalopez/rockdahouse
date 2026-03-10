@@ -34,14 +34,16 @@ src/
 │   ├── YouTubePlayer.tsx     # YouTube IFrame embed wrapper
 │   ├── Waveform.tsx          # Canvas waveform with loop region + hot cue markers
 │   ├── DualWaveform.tsx      # Mirrored dual waveform overlay (A top, B bottom) with beat grid
-│   ├── Mixer.tsx             # Crossfader + channel faders + VU + master
+│   ├── Mixer.tsx             # Crossfader + channel faders + VU + CUE buttons + master
 │   ├── Crossfader.tsx        # Horizontal slider with equal power curve
 │   ├── Fader.tsx             # Reusable vertical/horizontal slider
 │   ├── VUMeter.tsx           # Canvas-based animated level meter (simulated)
 │   ├── TransportControls.tsx # Play/Pause/Stop
 │   ├── BPMDisplay.tsx        # Auto BPM (Spotify) + TAP tempo + effective BPM display
 │   ├── BPMSync.tsx           # Sync buttons + sync lock + nudge + effective BPM diff
-│   ├── CueControls.tsx       # Pre-listen: CUE A/B buttons + CUE↔MASTER mix knob
+│   ├── CueControls.tsx       # Pre-listen: CUE buttons for all 4 decks + CUE↔MASTER knob
+│   ├── PitchFader.tsx        # Per-deck vertical pitch fader (±8%/±16% range toggle)
+│   ├── AudioSettings.tsx     # Audio output config modal (device routing, channel mode)
 │   ├── LoopControls.tsx      # 4/8/16 beat loops + manual IN/OUT
 │   ├── HotCues.tsx           # 3 color-coded cue points per deck
 │   ├── TrackInfo.tsx         # Title + channel + seek bar + time
@@ -53,8 +55,9 @@ src/
 │   ├── Sampler.tsx           # 16-pad sampler with Web Audio API, custom sample upload
 │   └── Equalizer.tsx         # Canvas-based rainbow bar equalizer (footer)
 ├── stores/
-│   ├── useDeckStore.ts       # 4 deck instances (A/B/C/D) via factory, loop + hotCues + playbackRate + syncLock
-│   ├── useMixerStore.ts      # Crossfader, master volume, VU levels, deck mode, crossfader assign
+│   ├── useDeckStore.ts       # 4 deck instances (A/B/C/D) via factory, loop + hotCues + playbackRate + syncLock + pitch + scratchMode
+│   ├── useMixerStore.ts      # Crossfader, master volume, VU levels, deck mode, crossfader assign, CUE targets
+│   ├── useAudioConfigStore.ts # Audio output device routing (master/headphone device, channel mode)
 │   ├── useSearchStore.ts     # Search query, results, loading, quality filter, metadata
 │   ├── usePlaylistStore.ts   # Persistent playlist (localStorage)
 │   ├── useMidiStore.ts       # MIDI mappings, learn mode, connection state (persistent)
@@ -81,7 +84,8 @@ src/
 - **BPM sync:** Uses `player.setPlaybackRate()` which changes pitch (no time-stretching). YouTube only supports specific rates: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]. Pitch fader snaps to these values. Sync lock continuously enforces the target rate via the Console.tsx rAF loop.
 - **Waveform:** Deterministic PRNG seeded by videoId — not real audio data but visually consistent per track.
 - **Dual waveform:** DualWaveform.tsx uses its own rAF loop reading deck stores via `getState()` — renders both decks mirrored (A top, B bottom) with beat grid lines at `60/bpm` intervals.
-- **CUE system:** Overrides volume routing to solo one deck for preview. Uses interval-based polling separate from the main rAF loop.
+- **CUE system:** Single volume authority — Console.tsx rAF loop is the ONLY place that calls `player.setVolume()`. CUE targets stored in mixer store, volume blended in the same loop.
+- **Audio routing limitation:** `setSinkId()` works on AudioContext (sampler) but NOT on YouTube iframes. CUE system is volume-based simulation.
 
 ## Keyboard Shortcuts
 
@@ -93,6 +97,7 @@ src/
 | ↑ / ↓ | Master volume |
 | S | Toggle search panel |
 | P | Toggle playlist |
+| 1/2/3/4 | Toggle CUE/Listen for Deck A/B/C/D |
 
 ## Environment Variables
 
@@ -185,6 +190,16 @@ npm run lint   # ESLint
 - [x] BPM batch API graceful fallback when Spotify credentials missing (returns null instead of 500)
 - [x] BPM badges properly resolve to "N/A" when metadata fetch fails (no infinite loading)
 
+### P9
+- [x] Per-deck vertical pitch fader (±8%/±16% range toggle, double-click reset)
+- [x] Scratch / pitch-bend mode toggle per jog wheel
+- [x] CUE/Listen buttons in mixer channel strips (all 4 decks)
+- [x] Multi-deck CUE pre-listen (store-driven, 4-deck support)
+- [x] Single volume authority — Console.tsx rAF loop is sole `setVolume()` caller (no more flicker)
+- [x] Audio output configuration modal (device routing, channel mode, setSinkId for sampler)
+- [x] MIDI actions: pitch, scratchMode, listen
+- [x] Keyboard shortcuts: 1/2/3/4 for CUE toggles
+
 ## Removed Features
 
 ### EQ (removed — not functional)
@@ -195,7 +210,7 @@ npm run lint   # ESLint
 ## Future Phases
 
 - P4: User auth (Supabase), cloud playlists, share sets by URL
-- P9: Recording, set export
+- P10: Recording, set export
 - Real EQ: needs a reliable audio extraction method (see "Removed Features" above)
 
 ## Monetization Analysis (YouTube API costs)

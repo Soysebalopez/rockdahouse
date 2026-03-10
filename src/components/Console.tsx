@@ -11,7 +11,9 @@ import Playlist from './Playlist';
 import MidiStatus from './MidiStatus';
 import Sampler from './Sampler';
 import Equalizer from './Equalizer';
+import AudioSettings from './AudioSettings';
 import { usePlaylistStore } from '@/stores/usePlaylistStore';
+import { useAudioConfigStore } from '@/stores/useAudioConfigStore';
 import { useThemeStore } from '@/stores/useThemeStore';
 import { useMidi } from '@/hooks/useMidi';
 import { useDeckAStore, useDeckBStore, useDeckCStore, useDeckDStore, getDeckStoreById } from '@/stores/useDeckStore';
@@ -112,8 +114,17 @@ export default function Console() {
         const side = mx.crossfaderAssign[deckId];
         const gain = side === 'A' ? gainSideA : gainSideB;
 
-        // Apply effective volume to YouTube player
-        const effective = d.volume * gain * mx.masterVolume * 100;
+        // Master volume path
+        const masterVol = d.volume * gain * mx.masterVolume * 100;
+
+        // CUE: if this deck is cue-targeted, blend cue solo with master
+        const isCued = mx.cueTargets[deckId];
+        let effective = masterVol;
+        if (isCued) {
+          const cueVol = (1 - mx.cueMix) * d.volume * 100;
+          effective = Math.max(cueVol, masterVol);
+        }
+
         d.playerRef?.setVolume(effective);
 
         // Simulate VU level
@@ -137,14 +148,19 @@ export default function Console() {
 
   const activeDecks = deckMode === 4 ? ALL_DECKS : (['A', 'B'] as DeckId[]);
 
+  const cueTargets = useMixerStore((s) => s.cueTargets);
+  const toggleCue = useMixerStore((s) => s.toggleCue);
+
   const channels = activeDecks.map((id) => ({
     id,
     volume: volumes[id],
     vuLevel: vuLevels[id],
     accentColor: ACCENT_COLORS[id],
     crossfaderAssign: crossfaderAssign[id],
+    isCued: cueTargets[id],
     onVolumeChange: setVolumes[id],
     onAssignChange: (side: 'A' | 'B') => setCrossfaderAssign(id, side),
+    onCueToggle: () => toggleCue(id),
   }));
 
   return (
@@ -201,9 +217,22 @@ export default function Console() {
           >
             {theme === 'dark' ? '☀ LIGHT' : '● DARK'}
           </button>
+          <button
+            onClick={() => useAudioConfigStore.getState().toggleSettings()}
+            className="px-2 py-1 rounded text-[10px] font-bold"
+            style={{
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-secondary)',
+              border: '1px solid var(--border-default)',
+            }}
+            title="Audio Output Settings"
+          >
+            AUDIO
+          </button>
           <MidiStatus />
         </div>
       </header>
+      <AudioSettings />
 
       {/* Main DJ Layout: [Deck A] [Center Controls] [Deck B] */}
       <div className="grid gap-3 grid-cols-1 lg:grid-cols-[1fr_auto_1fr]">

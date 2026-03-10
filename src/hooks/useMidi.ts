@@ -57,6 +57,21 @@ function executeAction(action: MidiAction, value: number) {
     case 'volume':
       state.setVolume(value / 127);
       break;
+    case 'pitch':
+      // MIDI CC 0-127 mapped to -1..+1
+      state.setPitchValue((value / 127) * 2 - 1);
+      break;
+    case 'scratchMode':
+      if (value > 0) state.setScratchMode(!state.scratchMode);
+      break;
+    case 'listen': {
+      if (value > 0) {
+        const deckIdMap: Record<string, DeckId> = { deckA: 'A', deckB: 'B', deckC: 'C', deckD: 'D' };
+        const did = deckIdMap[deck];
+        if (did) useMixerStore.getState().toggleCue(did);
+      }
+      break;
+    }
     case 'hotcue1':
       if (value > 0) triggerHotCue(store, 0);
       break;

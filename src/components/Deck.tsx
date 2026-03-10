@@ -10,6 +10,7 @@ import TrackInfo from './TrackInfo';
 import LoopControls from './LoopControls';
 import HotCues from './HotCues';
 import FXControls from './FXControls';
+import PitchFader from './PitchFader';
 import type { DeckId } from '@/lib/types';
 import { getDeckStoreById } from '@/stores/useDeckStore';
 
@@ -82,7 +83,7 @@ function PitchControl({ rate, bpm, syncLocked, onRateChange, accentColor }: {
       </div>
       {effectiveBpm && rate !== 1 && (
         <div className="text-[9px] font-mono tabular-nums" style={{ color: 'var(--text-secondary)' }}>
-          {bpm} \u2192 {effectiveBpm}
+          {bpm} {'\u2192'} {effectiveBpm}
         </div>
       )}
     </div>
@@ -93,14 +94,16 @@ export default function Deck({ id, compact }: DeckProps) {
   const store = getDeckStoreById(id);
   const {
     videoId, title, channel, duration, currentTime, isPlaying, volume,
-    bpm, playbackRate, syncLocked, loop, hotCues,
+    bpm, playbackRate, syncLocked, loop, hotCues, scratchMode, pitchValue, pitchRange,
     playerRef, setPlayerRef, setPlaying, setVolume, setBPM,
     setPlaybackRate, setSyncLocked,
     setCurrentTime, setDuration, setLoop, clearLoop, setHotCue,
+    setScratchMode, setPitchValue,
   } = store();
 
   const accent = ACCENTS[id];
   const timeUpdateRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const bendRestoreRef = useRef<number>(0);
 
   const handleReady = useCallback((player: YT.Player) => {
     setPlayerRef(player);
@@ -150,8 +153,20 @@ export default function Deck({ id, compact }: DeckProps) {
   };
   const handleScratch = (delta: number) => {
     if (!playerRef) return;
-    const t = playerRef.getCurrentTime?.() ?? 0;
-    playerRef.seekTo(Math.max(0, t + delta), true);
+    if (scratchMode) {
+      // Scratch mode: seek through the track
+      const t = playerRef.getCurrentTime?.() ?? 0;
+      playerRef.seekTo(Math.max(0, t + delta), true);
+    } else {
+      // Pitch bend mode: temporarily adjust rate based on drag speed
+      const baseRate = playbackRate;
+      const bendAmount = delta * 8;
+      playerRef.setPlaybackRate(Math.max(0.5, Math.min(2, baseRate + bendAmount)));
+      clearTimeout(bendRestoreRef.current);
+      bendRestoreRef.current = window.setTimeout(() => {
+        playerRef?.setPlaybackRate(Math.max(0.5, Math.min(2, baseRate)));
+      }, 150);
+    }
   };
 
   return (
@@ -198,14 +213,33 @@ export default function Deck({ id, compact }: DeckProps) {
           />
           <TrackInfo title={title} channel={channel} currentTime={currentTime} duration={duration} onSeek={handleSeek} accentColor={accent} />
         </div>
-        <JogWheel
-          isPlaying={isPlaying}
-          currentTime={currentTime}
-          onNudge={handleNudge}
-          onScratch={handleScratch}
-          accentColor={ACCENT_HEX[id]}
-          size={90}
-        />
+        <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center gap-1">
+            <JogWheel
+              isPlaying={isPlaying}
+              currentTime={currentTime}
+              onNudge={handleNudge}
+              onScratch={handleScratch}
+              scratchMode={scratchMode}
+              pitchValue={pitchValue}
+              pitchRange={pitchRange}
+              accentColor={ACCENT_HEX[id]}
+              size={90}
+            />
+            <button
+              onClick={() => setScratchMode(!scratchMode)}
+              className="px-2 py-0.5 rounded text-[9px] font-bold"
+              style={{
+                background: scratchMode ? accent : 'var(--bg-elevated)',
+                color: scratchMode ? '#fff' : 'var(--text-muted)',
+              }}
+              title={scratchMode ? 'Scratch mode (seek)' : 'Pitch bend mode (rate)'}
+            >
+              {scratchMode ? 'SCRATCH' : 'BEND'}
+            </button>
+          </div>
+          <PitchFader deckId={id} accentColor={ACCENT_HEX[id]} />
+        </div>
       </div>
 
       {/* Controls row */}
@@ -214,7 +248,7 @@ export default function Deck({ id, compact }: DeckProps) {
         <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
         <BPMDisplay trackTitle={title} onBpmChange={setBPM} accentColor={accent} playbackRate={playbackRate} />
         <div className="w-px h-8" style={{ background: 'var(--border-default)' }} />
-        {/* Pitch fader */}
+        {/* Pitch control (rate snapping) */}
         <PitchControl
           rate={playbackRate}
           bpm={bpm}
