@@ -61,6 +61,15 @@ function executeAction(action: MidiAction, value: number) {
       // MIDI CC 0-127 mapped to -1..+1
       state.setPitchValue((value / 127) * 2 - 1);
       break;
+    case 'sync':
+      if (value > 0) {
+        // Toggle sync lock
+        state.setSyncLocked(!state.syncLocked);
+      }
+      break;
+    case 'load':
+      // Load is handled by the UI (search/playlist), no-op for now
+      break;
     case 'scratchMode':
       if (value > 0) state.setScratchMode(!state.scratchMode);
       break;
@@ -190,7 +199,10 @@ export function useMidi() {
         });
 
         if (inputs.length > 0) {
-          setConnected(true, inputs[0].name ?? 'MIDI Device');
+          const name = inputs[0].name ?? 'MIDI Device';
+          setConnected(true, name);
+          // Auto-detect and load preset for this controller
+          useMidiStore.getState().autoDetectPreset(name);
         } else {
           setConnected(false);
         }
