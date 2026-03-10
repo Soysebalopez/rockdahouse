@@ -171,7 +171,7 @@ export default function Deck({ id, compact }: DeckProps) {
 
   return (
     <div
-      className="flex flex-col gap-1.5 p-3 rounded-xl relative overflow-hidden"
+      className="flex flex-col gap-1 p-2 rounded-xl relative overflow-hidden"
       style={{
         background: 'var(--bg-surface)',
         border: `1px solid var(--border-default)`,

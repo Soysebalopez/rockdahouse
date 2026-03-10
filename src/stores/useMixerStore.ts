@@ -17,6 +17,8 @@ interface MixerState {
   // CUE/headphone pre-listen
   cueTargets: Record<DeckId, boolean>;
   cueMix: number; // 0 = full cue, 1 = full master
+  // Panel visibility
+  showSampler: boolean;
 }
 
 interface MixerActions {
@@ -30,6 +32,8 @@ interface MixerActions {
   // CUE
   toggleCue: (deck: DeckId) => void;
   setCueMix: (mix: number) => void;
+  // Panel visibility
+  toggleSampler: () => void;
   // Legacy accessors for backward compat
   setVuLevelA: (level: number) => void;
   setVuLevelB: (level: number) => void;
@@ -45,6 +49,7 @@ export const useMixerStore = create<MixerState & MixerActions>((set) => ({
   crossfaderAssign: { A: 'A', B: 'B', C: 'A', D: 'B' },
   cueTargets: { A: false, B: false, C: false, D: false },
   cueMix: 0.5,
+  showSampler: false,
 
   setCrossfaderPosition: (position) => set({ crossfaderPosition: position }),
   setCrossfaderCurve: (curve) => set({ crossfaderCurve: curve }),
@@ -55,6 +60,7 @@ export const useMixerStore = create<MixerState & MixerActions>((set) => ({
   setCrossfaderAssign: (deck, side) => set((s) => ({ crossfaderAssign: { ...s.crossfaderAssign, [deck]: side } })),
   toggleCue: (deck) => set((s) => ({ cueTargets: { ...s.cueTargets, [deck]: !s.cueTargets[deck] } })),
   setCueMix: (mix) => set({ cueMix: mix }),
+  toggleSampler: () => set((s) => ({ showSampler: !s.showSampler })),
   // Legacy
   setVuLevelA: (level) => set((s) => ({ vuLevels: { ...s.vuLevels, A: level } })),
   setVuLevelB: (level) => set((s) => ({ vuLevels: { ...s.vuLevels, B: level } })),

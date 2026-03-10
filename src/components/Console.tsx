@@ -150,6 +150,8 @@ export default function Console() {
 
   const cueTargets = useMixerStore((s) => s.cueTargets);
   const toggleCue = useMixerStore((s) => s.toggleCue);
+  const showSampler = useMixerStore((s) => s.showSampler);
+  const toggleSampler = useMixerStore((s) => s.toggleSampler);
 
   const channels = activeDecks.map((id) => ({
     id,
@@ -164,9 +166,9 @@ export default function Console() {
   }));
 
   return (
-    <div className="flex flex-col gap-2 p-3 min-h-screen max-w-[1800px] mx-auto">
+    <div className="flex flex-col gap-1.5 p-2 pb-14 min-h-screen max-w-[1800px] mx-auto">
       {/* Header */}
-      <header className="flex items-center justify-between py-2 px-1">
+      <header className="flex items-center justify-between py-1 px-1">
         <div className="flex items-center gap-3">
           <span className="text-xl font-black tracking-tight" style={{
             background: 'var(--title-gradient)',
@@ -218,6 +220,18 @@ export default function Console() {
             {theme === 'dark' ? '☀ LIGHT' : '● DARK'}
           </button>
           <button
+            onClick={toggleSampler}
+            className="px-2 py-1 rounded text-[10px] font-bold"
+            style={{
+              background: showSampler ? 'var(--accent-a)' : 'var(--bg-elevated)',
+              color: showSampler ? '#fff' : 'var(--text-muted)',
+              border: '1px solid var(--border-default)',
+            }}
+            title="Toggle Sampler Panel"
+          >
+            SAMPLER
+          </button>
+          <button
             onClick={() => useAudioConfigStore.getState().toggleSettings()}
             className="px-2 py-1 rounded text-[10px] font-bold"
             style={{
@@ -235,7 +249,7 @@ export default function Console() {
       <AudioSettings />
 
       {/* Main DJ Layout: [Deck A] [Center Controls] [Deck B] */}
-      <div className="grid gap-3 grid-cols-1 lg:grid-cols-[1fr_auto_1fr]">
+      <div className="grid gap-2 grid-cols-1 lg:grid-cols-[1fr_auto_1fr]">
         {/* Deck A */}
         <Deck key="A" id="A" />
 
@@ -267,9 +281,9 @@ export default function Console() {
       )}
 
       {/* Search + Sampler row */}
-      <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-3 items-stretch">
+      <div className={`grid gap-2 items-stretch ${showSampler ? 'grid-cols-1 lg:grid-cols-[3fr_2fr]' : 'grid-cols-1'}`}>
         <SearchPanel onLoadToDeck={handleLoadToDeck} />
-        <Sampler />
+        {showSampler && <Sampler />}
       </div>
       <Playlist onLoadToDeck={handleLoadToDeck} />
       <Equalizer />

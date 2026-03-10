@@ -23,14 +23,14 @@ export default function Sampler() {
 
   return (
     <div
-      className="rounded-xl overflow-hidden flex flex-col h-full"
+      className="rounded-xl overflow-hidden flex flex-col"
       style={{
         background: 'var(--bg-surface)',
         border: '1px solid var(--border-default)',
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5">
+      <div className="flex items-center justify-between px-3 py-1.5">
         <div className="flex items-center gap-2">
           <span
             className="text-[10px] font-bold tracking-wider uppercase"
@@ -51,87 +51,56 @@ export default function Sampler() {
           max={1}
           onChange={setVolume}
           label="VOL"
-          size={32}
+          size={28}
           accentColor="var(--accent-a)"
         />
       </div>
 
-      {/* Pads — always visible, fills remaining space */}
-      <div className="px-4 pb-4 flex-1 flex flex-col justify-center">
-        <div className="grid grid-cols-4 gap-2">
+      {/* Compact pad grid: 8 columns x 2 rows */}
+      <div className="px-3 pb-2">
+        <div className="grid grid-cols-8 gap-1">
           {pads.map((pad, i) => (
             <div key={i} className="flex flex-col gap-0.5">
               <button
                 onMouseDown={() => triggerPad(i)}
                 onMouseUp={() => pad.isLoop && stopPad(i)}
                 onMouseLeave={() => pad.isLoop && pad.isPlaying && stopPad(i)}
-                className="relative aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 transition-all active:scale-95"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  fileInputRefs.current[i]?.click();
+                }}
+                className="relative rounded-md flex flex-col items-center justify-center transition-all active:scale-95 py-1.5"
                 style={{
                   background: pad.isPlaying
                     ? pad.color
                     : `${pad.color}20`,
                   border: `1px solid ${pad.color}60`,
-                  boxShadow: pad.isPlaying ? `0 0 12px ${pad.color}80` : 'none',
+                  boxShadow: pad.isPlaying ? `0 0 8px ${pad.color}80` : 'none',
                 }}
+                title={`${pad.name} (right-click to load sample)`}
               >
                 <span
-                  className="text-[11px] font-bold"
+                  className="text-[9px] font-bold leading-none"
                   style={{ color: pad.isPlaying ? '#fff' : pad.color }}
                 >
                   {pad.name}
                 </span>
-                <span
-                  className="text-[8px]"
-                  style={{ color: pad.isPlaying ? '#fff8' : `${pad.color}80` }}
-                >
-                  {i + 1}
-                </span>
                 {pad.isLoop && (
                   <span
-                    className="absolute top-0.5 right-0.5 text-[7px] px-0.5 rounded"
+                    className="absolute top-0 right-0 text-[6px] px-0.5 rounded-bl"
                     style={{ background: `${pad.color}40`, color: pad.color }}
                   >
                     LP
                   </span>
                 )}
-                {pad.isCustom && (
-                  <span
-                    className="absolute top-0.5 left-0.5 text-[7px] px-0.5 rounded"
-                    style={{ background: `${pad.color}40`, color: pad.color }}
-                  >
-                    ✦
-                  </span>
-                )}
               </button>
-              {/* Pad actions */}
-              <div className="flex gap-0.5 justify-center">
-                <button
-                  onClick={() => togglePadLoop(i)}
-                  className="text-[8px] px-1 rounded"
-                  style={{
-                    background: pad.isLoop ? pad.color : 'var(--bg-elevated)',
-                    color: pad.isLoop ? '#fff' : 'var(--text-muted)',
-                  }}
-                  title="Toggle loop mode"
-                >
-                  ⟳
-                </button>
-                <button
-                  onClick={() => fileInputRefs.current[i]?.click()}
-                  className="text-[8px] px-1 rounded"
-                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}
-                  title="Load custom sample"
-                >
-                  ↑
-                </button>
-                <input
-                  ref={(el) => { fileInputRefs.current[i] = el; }}
-                  type="file"
-                  accept="audio/*"
-                  className="hidden"
-                  onChange={(e) => handleFileUpload(i, e)}
-                />
-              </div>
+              <input
+                ref={(el) => { fileInputRefs.current[i] = el; }}
+                type="file"
+                accept="audio/*"
+                className="hidden"
+                onChange={(e) => handleFileUpload(i, e)}
+              />
             </div>
           ))}
         </div>

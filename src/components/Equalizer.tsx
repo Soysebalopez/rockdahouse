@@ -7,7 +7,7 @@ import { useMixerStore } from '@/stores/useMixerStore';
 const BAR_COUNT = 32;
 const BAR_GAP = 2;
 const SMOOTHING = 0.12;
-const HEIGHT = 80;
+const HEIGHT = 40;
 
 // Rainbow gradient colors for bars
 function barColor(index: number, total: number): string {
@@ -86,8 +86,8 @@ export default function Equalizer() {
 
   return (
     <div
-      className="w-full rounded-lg overflow-hidden"
-      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+      className="fixed bottom-0 left-0 right-0 w-full overflow-hidden z-40"
+      style={{ background: 'var(--bg-surface)', borderTop: '1px solid var(--border-subtle)' }}
     >
       <canvas
         ref={canvasRef}
