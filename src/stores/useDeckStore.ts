@@ -26,6 +26,10 @@ interface DeckState {
   playbackRate: number;
   syncLocked: boolean;
   playerRef: YT.Player | null;
+  // Audio routing
+  audioUrl: string | null;
+  audioReady: boolean;
+  useDirectAudio: boolean;
   // Pitch
   pitchRange: 8 | 16;
   pitchValue: number; // -1 to +1 normalized
@@ -46,6 +50,10 @@ interface DeckActions {
   setSyncLocked: (locked: boolean) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
+  // Audio routing
+  setAudioUrl: (url: string | null) => void;
+  setAudioReady: (ready: boolean) => void;
+  setUseDirectAudio: (use: boolean) => void;
   // Pitch
   setPitchRange: (range: 8 | 16) => void;
   setPitchValue: (value: number) => void;
@@ -71,6 +79,9 @@ const defaultDeckState: DeckState = {
   playbackRate: 1,
   syncLocked: false,
   playerRef: null,
+  audioUrl: null,
+  audioReady: false,
+  useDirectAudio: false,
   pitchRange: 8,
   pitchValue: 0,
   scratchMode: true,
@@ -90,6 +101,9 @@ function createDeckStore() {
       playbackRate: 1,
       syncLocked: false,
       pitchValue: 0,
+      audioUrl: null,
+      audioReady: false,
+      useDirectAudio: false,
       loop: { ...defaultLoop },
       hotCues: [null, null, null],
     }),
@@ -104,6 +118,9 @@ function createDeckStore() {
     setSyncLocked: (locked) => set({ syncLocked: locked }),
     setCurrentTime: (time) => set({ currentTime: time }),
     setDuration: (duration) => set({ duration }),
+    setAudioUrl: (url) => set({ audioUrl: url }),
+    setAudioReady: (ready) => set({ audioReady: ready }),
+    setUseDirectAudio: (use) => set({ useDirectAudio: use }),
     setPitchRange: (range) => set({ pitchRange: range }),
     setPitchValue: (value) => set((s) => {
       const clamped = Math.max(-1, Math.min(1, value));

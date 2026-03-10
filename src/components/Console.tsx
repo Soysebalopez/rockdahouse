@@ -20,6 +20,7 @@ import { useDeckAStore, useDeckBStore, useDeckCStore, useDeckDStore, getDeckStor
 import { useMixerStore } from '@/stores/useMixerStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import type { DeckId } from '@/lib/types';
+import { getAudioElement } from '@/lib/audioElements';
 
 const ALL_DECKS: DeckId[] = ['A', 'B', 'C', 'D'];
 const DECK_STORES = { A: useDeckAStore, B: useDeckBStore, C: useDeckCStore, D: useDeckDStore } as const;
@@ -125,7 +126,13 @@ export default function Console() {
           effective = Math.max(cueVol, masterVol);
         }
 
-        d.playerRef?.setVolume(effective);
+        // Direct audio: set volume on HTMLAudioElement instead of iframe
+        const audioEl = d.useDirectAudio ? getAudioElement(deckId) : null;
+        if (audioEl) {
+          audioEl.volume = Math.min(1, effective / 100);
+        } else {
+          d.playerRef?.setVolume(effective);
+        }
 
         // Simulate VU level
         const base = d.isPlaying ? d.volume * 0.7 : 0;

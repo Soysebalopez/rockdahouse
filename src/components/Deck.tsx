@@ -13,6 +13,7 @@ import FXControls from './FXControls';
 import PitchFader from './PitchFader';
 import type { DeckId } from '@/lib/types';
 import { getDeckStoreById } from '@/stores/useDeckStore';
+import { useAudioRouting } from '@/hooks/useAudioRouting';
 
 interface DeckProps {
   id: DeckId;
@@ -95,11 +96,14 @@ export default function Deck({ id, compact }: DeckProps) {
   const {
     videoId, title, channel, duration, currentTime, isPlaying, volume,
     bpm, playbackRate, syncLocked, loop, hotCues, scratchMode, pitchValue, pitchRange,
+    useDirectAudio, audioReady,
     playerRef, setPlayerRef, setPlaying, setVolume, setBPM,
     setPlaybackRate, setSyncLocked,
     setCurrentTime, setDuration, setLoop, clearLoop, setHotCue,
     setScratchMode, setPitchValue,
   } = store();
+
+  const { syncPlayState, syncSeek } = useAudioRouting(id);
 
   const accent = ACCENTS[id];
   const timeUpdateRef = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -134,16 +138,25 @@ export default function Deck({ id, compact }: DeckProps) {
     return () => { if (timeUpdateRef.current) clearInterval(timeUpdateRef.current); };
   }, [isPlaying, playerRef, setCurrentTime, setDuration, id]);
 
-  const handlePlay = () => playerRef?.playVideo();
-  const handlePause = () => playerRef?.pauseVideo();
+  const handlePlay = () => {
+    playerRef?.playVideo();
+    syncPlayState(true);
+  };
+  const handlePause = () => {
+    playerRef?.pauseVideo();
+    syncPlayState(false);
+  };
   const handleStop = () => {
     playerRef?.pauseVideo();
     playerRef?.seekTo(0, true);
+    syncPlayState(false);
+    syncSeek(0);
     setCurrentTime(0);
     clearLoop();
   };
   const handleSeek = (seconds: number) => {
     playerRef?.seekTo(seconds, true);
+    syncSeek(seconds);
     setCurrentTime(seconds);
   };
   const handleNudge = (seconds: number) => {
@@ -193,6 +206,11 @@ export default function Deck({ id, compact }: DeckProps) {
         {isPlaying && (
           <span className="text-[9px] px-1.5 py-0.5 rounded-full animate-pulse" style={{ background: `${ACCENT_HEX[id]}30`, color: accent }}>
             LIVE
+          </span>
+        )}
+        {useDirectAudio && audioReady && (
+          <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold" style={{ background: '#22c55e30', color: '#22c55e' }}>
+            DIRECT AUDIO
           </span>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAudioConfigStore, type OutputMode, type ChannelMode } from '@/stores/useAudioConfigStore';
+import { useDeckAStore, useDeckBStore } from '@/stores/useDeckStore';
 
 const OUTPUT_MODES: { value: OutputMode; label: string; desc: string }[] = [
   { value: 'speakers', label: 'Speakers Only', desc: 'All audio to one device' },
@@ -93,10 +94,28 @@ export default function AudioSettings() {
         )}
 
         {/* Notice */}
-        <div className="px-3 py-2 rounded text-[10px] leading-relaxed" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
-          YouTube audio routing is simulated via volume control. Sampler audio can be routed to the selected master device via Web Audio API.
-        </div>
+        <AudioRoutingStatus />
       </div>
+    </div>
+  );
+}
+
+function AudioRoutingStatus() {
+  const directA = useDeckAStore((s) => s.useDirectAudio);
+  const directB = useDeckBStore((s) => s.useDirectAudio);
+  const hasDirectAudio = directA || directB;
+
+  if (hasDirectAudio) {
+    return (
+      <div className="px-3 py-2 rounded text-[10px] leading-relaxed" style={{ background: '#22c55e15', color: '#22c55e', border: '1px solid #22c55e30' }}>
+        Direct audio routing active {directA && '(A)'} {directB && '(B)'}. Audio is routed to selected devices via setSinkId().
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-3 py-2 rounded text-[10px] leading-relaxed" style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+      Audio routing unavailable — using volume simulation. Install yt-dlp locally for real device routing.
     </div>
   );
 }
